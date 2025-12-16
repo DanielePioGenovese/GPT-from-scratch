@@ -1,13 +1,14 @@
 
 import requests
-from dataset import InputEmbeddings, create_dataloader_v1
+from dataset import TransformerEmbedding, create_dataloader_v1
 import config
 
 if __name__ == "__main__":
     text = requests.get(config.URL).text
 
-    embedder = InputEmbeddings(
+    embedder = TransformerEmbedding(
         n_vocab=config.VOCAB_SIZE,
+        max_length=config.MAX_LENGTH,
         out_dim=config.OUTPUT_DIM
     )
 
