@@ -1,6 +1,6 @@
 
 import requests
-from dataset import InputEmbeddings
+from dataset import InputEmbeddings, create_dataloader_v1
 import config
 
 if __name__ == "__main__":
@@ -11,7 +11,7 @@ if __name__ == "__main__":
         out_dim=config.OUTPUT_DIM
     )
 
-    dataloader = embedder.create_dataloader_v1(
+    dataloader = create_dataloader_v1(
         txt=text, 
         batch_size=16
     )
