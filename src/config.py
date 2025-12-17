@@ -12,6 +12,12 @@ VOCAB_SIZE = tiktoken.get_encoding("gpt2").n_vocab
 OUTPUT_DIM = 6
 MAX_LENGTH = 1024
 EMBED_DIM = 768
+TRAIN_RATIO = 0.9
+TRAIN_SHUFFLE = True
+VAL_SHUFFLE = False
+STRIDE = 128
+TRAIN_DROP_LAST = True
+VAL_DROP_LAST = False
 
 # model
 NUM_HEADS = 12

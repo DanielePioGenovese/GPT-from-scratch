@@ -18,15 +18,6 @@ if __name__ == "__main__":
         out_dim=config.EMBED_DIM,
     )
 
-    dataloader = create_dataloader_v1(
-        txt=text, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS
-    )
-
-    input_ids, target_ids = next(iter(dataloader))
-    embeddings = embedder(input_ids)
-
-    print(embeddings.shape)
-
     model = GPTModel(
         vocab_size=config.VOCAB_SIZE,
         emb_dim=config.EMBED_DIM,
@@ -59,3 +50,25 @@ if __name__ == "__main__":
 
     except ImportError:
         print("tiktoken not installed; skipping text generation test.")
+
+    split_idx = int(config.TRAIN_RATIO * len(text))
+    
+    train_dataloader = create_dataloader_v1(
+        text[:split_idx],
+        batch_size=config.BATCH_SIZE,
+        max_length=config.MAX_LENGTH,
+        stride=config.STRIDE,
+        drop_last=config.TRAIN_DROP_LAST,
+        shuffle=config.TRAIN_SHUFFLE,
+        num_workers=config.NUM_WORKERS,
+    )
+
+    val_dataloader = create_dataloader_v1(
+        text[split_idx:],
+        batch_size=config.BATCH_SIZE,
+        max_length=config.MAX_LENGTH,
+        stride=config.STRIDE,
+        drop_last=config.VAL_DROP_LAST,
+        shuffle=config.VAL_SHUFFLE,
+        num_workers=config.NUM_WORKERS,
+    )
