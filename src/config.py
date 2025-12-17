@@ -12,3 +12,10 @@ BATCH_SIZE = 4
 VOCAB_SIZE = tiktoken.get_encoding("gpt2").n_vocab
 OUTPUT_DIM = 6
 MAX_LENGTH = 256
+EMBED_DIM = 6
+
+# model
+NUM_HEADS = 2
+NUM_LAYERS = 4
+QKV_BIAS = False
+DROPOUT_RATE = 0.1

@@ -2,6 +2,7 @@
 import requests
 from dataset import TransformerEmbedding, create_dataloader_v1
 import config
+from model import MultiHeadAttention
 
 if __name__ == "__main__":
     text = requests.get(config.URL).text
@@ -20,5 +21,13 @@ if __name__ == "__main__":
 
     input_ids, target_ids = next(iter(dataloader))
     embeddings = embedder(input_ids)
+
+    model = MultiHeadAttention(
+        d_in=config.EMBED_DIM,
+        d_out=config.OUTPUT_DIM,
+        context_length=config.MAX_LENGTH,
+        num_heads=2,
+        dropout=0.1
+    )
 
     print(embeddings.shape)
