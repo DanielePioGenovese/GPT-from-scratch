@@ -1,10 +1,16 @@
+import tiktoken
+
 import requests
 from dataset import TransformerEmbedding, create_dataloader_v1
 import config
 from model import GPTModel
+from text_generation import generate_text_simple
 
 if __name__ == "__main__":
     text = requests.get(config.URL).text
+
+    print(f"Dataset length (in characters): {len(text):,}")
+    print(f'Token number in the text: {len(tiktoken.get_encoding("gpt2").encode(text)):,}')
 
     embedder = TransformerEmbedding(
         n_vocab=config.VOCAB_SIZE,
@@ -35,3 +41,21 @@ if __name__ == "__main__":
 
 
     print(f'Total params: {sum(p.numel() for p in model.parameters()):,}')
+
+    try:
+        import tiktoken
+        import torch
+        test_seq = "To be, or not to be, that is the question:"
+
+        tokenizer = tiktoken.get_encoding("gpt2")
+
+        encoded = tokenizer.encode(test_seq)
+        test_seq = torch.tensor(encoded).unsqueeze(0)
+        model.eval()
+        text_exp = generate_text_simple(model, idx=test_seq, max_new_tokens=10, context_size=128)
+
+        print("Text generation test passed: ")
+        print(tokenizer.decode(text_exp.squeeze().tolist()))
+
+    except ImportError:
+        print("tiktoken not installed; skipping text generation test.")
