@@ -1,33 +1,34 @@
-import os
-import tiktoken
+from dataclasses import dataclass
 
+@dataclass
+class ModelConfig:
+    num_heads: int
+    num_layers: int
+    qkv_bias: bool
+    mha_dropout_rate: float
+    ffn_dropout_rate: float
+    emb_dropout_rate: float
+    layer_norm_eps: float
+    embed_dim: int 
+    ff_hidden_dim: int 
+    output_dim: int
+    vocab_size: int 
+    max_length: int
 
-#Implement DataClass from datalasses ed usare il file come jason o yaml\yoml
+@dataclass
+class DataConfig:
+    url: str
+    data_dir: str
+    batch_size: int
+    stride: int
+    train_ratio: float
+    train_shuffle: bool
+    val_shuffle: bool
+    train_drop_last: bool
+    val_drop_last: bool
+    num_workers: int
 
-# main.py
-URL = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-
-# dataset
-NUM_WORKERS = min(os.cpu_count(), 4)
-DATA_DIR = "./data"
-BATCH_SIZE = 4
-VOCAB_SIZE = tiktoken.get_encoding("gpt2").n_vocab
-OUTPUT_DIM = 6
-MAX_LENGTH = 1024
-EMBED_DIM = 768
-TRAIN_RATIO = 0.9
-TRAIN_SHUFFLE = True
-VAL_SHUFFLE = False
-STRIDE = 128
-TRAIN_DROP_LAST = True
-VAL_DROP_LAST = False
-
-# model
-NUM_HEADS = 12
-NUM_LAYERS = 12
-QKV_BIAS = False
-MHA_DROPOUT_RATE = 0.1
-FFN_DROPOUT_RATE = 0.1
-EMB_DROPOUT_RATE = 0.1
-LAYER_NORM_EPS = 1e-5
-FF_HIDDEN_DIM = EMBED_DIM * 4
+@dataclass
+class Config:
+    model: ModelConfig
+    dataset: DataConfig

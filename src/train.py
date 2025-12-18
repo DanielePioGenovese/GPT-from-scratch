@@ -1,46 +1,47 @@
 import tiktoken
 import hydra
+from hydra.core.config_store import ConfigStore
+
 import requests
 from dataset import TransformerEmbedding, create_dataloader_v1
-import config
+from config import Config
 from model import GPTModel
 from text_generation import generate_text_simple
 import pathlib
 
-config_path = pathlib.Path().cwd() / "config" 
-@hydra.main(version_base=None, config_path=r'D:\Python-Environments\LLM\GPTFrormScratch\src\conf', config_name="model")
-def main(cfg):
-    text = requests.get(config.URL).text
+cs = ConfigStore.instance()
+cs.store(name='model_config', node=Config)
 
+@hydra.main(version_base=None, config_path=r'D:\Python-Environments\LLM\GPTFrormScratch\src\conf', config_name="config")
+def main(cfg: Config):
 
-    print(cfg)
-    return
+    text = requests.get(cfg.dataset.url).text
+
     print(f"Dataset length (in characters): {len(text):,}")
     print(f'Token number in the text: {len(tiktoken.get_encoding("gpt2").encode(text)):,}')
 
     embedder = TransformerEmbedding(
-        n_vocab=config.VOCAB_SIZE,
-        max_length=config.MAX_LENGTH,
-        out_dim=config.EMBED_DIM,
+        n_vocab=cfg.model.vocab_size,
+        max_length=cfg.model.max_length,
+        out_dim=cfg.model.embed_dim,
     )
 
     model = GPTModel(
-        vocab_size=config.VOCAB_SIZE,
-        emb_dim=config.EMBED_DIM,
-        max_length=config.MAX_LENGTH,
-        num_heads=config.NUM_HEADS,
-        num_layers=config.NUM_LAYERS,
-        shortcut_dropout=config.FFN_DROPOUT_RATE,
-        mha_dropout=config.MHA_DROPOUT_RATE,
-        emb_dropout=config.EMB_DROPOUT_RATE,
-        qkv_bias=config.QKV_BIAS
+        vocab_size=cfg.model.vocab_size,
+        emb_dim=cfg.model.embed_dim,
+        max_length=cfg.model.max_length,
+        num_heads=cfg.model.num_heads,
+        num_layers=cfg.model.num_layers,
+        shortcut_dropout=cfg.model.ffn_dropout_rate,
+        mha_dropout=cfg.model.mha_dropout_rate,
+        emb_dropout=cfg.model.emb_dropout_rate,
+        qkv_bias=cfg.model.qkv_bias
     )
 
 
     print(f'Total params: {sum(p.numel() for p in model.parameters()):,}')
 
     try:
-        import tiktoken
         import torch
         test_seq = "To be, or not to be, that is the question:"
 
@@ -57,26 +58,26 @@ def main(cfg):
     except ImportError:
         print("tiktoken not installed; skipping text generation test.")
 
-    split_idx = int(config.TRAIN_RATIO * len(text))
-    
+    split_idx = int(cfg.dataset.train_ratio * len(text))
+
     train_dataloader = create_dataloader_v1(
         text[:split_idx],
-        batch_size=config.BATCH_SIZE,
-        max_length=config.MAX_LENGTH,
-        stride=config.STRIDE,
-        drop_last=config.TRAIN_DROP_LAST,
-        shuffle=config.TRAIN_SHUFFLE,
-        num_workers=config.NUM_WORKERS,
+        batch_size=cfg.dataset.batch_size,
+        max_length=cfg.model.max_length,
+        stride=cfg.dataset.stride,
+        drop_last=cfg.dataset.train_drop_last,
+        shuffle=cfg.dataset.train_shuffle,
+        num_workers=cfg.dataset.num_workers,
     )
 
     val_dataloader = create_dataloader_v1(
         text[split_idx:],
-        batch_size=config.BATCH_SIZE,
-        max_length=config.MAX_LENGTH,
-        stride=config.STRIDE,
-        drop_last=config.VAL_DROP_LAST,
-        shuffle=config.VAL_SHUFFLE,
-        num_workers=config.NUM_WORKERS,
+        batch_size=cfg.dataset.batch_size,
+        max_length=cfg.model.max_length,
+        stride=cfg.dataset.stride,
+        drop_last=cfg.dataset.val_drop_last,
+        shuffle=cfg.dataset.val_shuffle,
+        num_workers=cfg.dataset.num_workers,
     )
 
 if __name__ == "__main__":

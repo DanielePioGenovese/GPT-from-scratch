@@ -1,0 +1,12 @@
+num_heads: 12
+num_layers: 12
+qkv_bias: false
+mha_dropout_rate: 0.1
+ffn_dropout_rate: 0.1
+emb_dropout_rate: 0.1
+layer_norm_eps: 1e-5
+embed_dim: 768 
+ff_hidden_dim: 3072 
+output_dim: 6
+vocab_size: 50257
+max_length: 1024

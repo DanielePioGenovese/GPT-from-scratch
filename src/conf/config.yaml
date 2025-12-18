@@ -1,0 +1,10 @@
+# conf/config.yaml
+defaults:
+  - model: gpt_small
+  - dataset: shakespeare
+
+
+
+  
+  # In Hydra/OmegaConf puoi fare riferimento ad altre variabili
+  # Supponendo che tu abbia definito embed_dim altrove o nello stesso file
