@@ -14,6 +14,11 @@ class ModelConfig:
     output_dim: int
     vocab_size: int 
     max_length: int
+    learning_rate: float
+    weight_decay: float
+    num_epochs: int
+    eval_freq: int
+    eval_iter: int
 
 @dataclass
 class DataConfig:

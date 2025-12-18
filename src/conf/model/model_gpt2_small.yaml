@@ -1,0 +1,17 @@
+num_heads: 12
+num_layers: 12
+embed_dim: 768
+ff_hidden_dim: 3072
+max_length: 1024
+vocab_size: 50257
+output_dim: 50257       
+qkv_bias: false
+mha_dropout_rate: 0.1
+ffn_dropout_rate: 0.1
+emb_dropout_rate: 0.1
+layer_norm_eps: 0.00001
+learning_rate: 0.0004
+weight_decay: 0.1
+num_epochs: 10
+eval_freq: 5
+eval_iter: 5

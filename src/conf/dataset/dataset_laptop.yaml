@@ -1,11 +1,10 @@
 url: https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
 data_dir: data
-batch_size: 4
+batch_size: 2          
 stride: 128
 train_ratio: 0.9
 train_shuffle: true
 val_shuffle: false
 train_drop_last: true
 val_drop_last: false
-num_workers: 4  
-
+num_workers: 0

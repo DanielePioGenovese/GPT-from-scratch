@@ -1,7 +1,7 @@
 # conf/config.yaml
 defaults:
-  - model: gpt_small
-  - dataset: shakespeare
+  - model: model_laptop
+  - dataset: dataset_laptop
 
 
 
