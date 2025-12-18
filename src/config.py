@@ -1,6 +1,9 @@
 import os
 import tiktoken
 
+
+#Implement DataClass from datalasses ed usare il file come jason o yaml\yoml
+
 # main.py
 URL = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
 

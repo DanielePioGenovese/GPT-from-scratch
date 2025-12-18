@@ -1,14 +1,20 @@
 import tiktoken
-
+import hydra
 import requests
 from dataset import TransformerEmbedding, create_dataloader_v1
 import config
 from model import GPTModel
 from text_generation import generate_text_simple
+import pathlib
 
-if __name__ == "__main__":
+config_path = pathlib.Path().cwd() / "config" 
+@hydra.main(version_base=None, config_path=r'D:\Python-Environments\LLM\GPTFrormScratch\src\conf', config_name="model")
+def main(cfg):
     text = requests.get(config.URL).text
 
+
+    print(cfg)
+    return
     print(f"Dataset length (in characters): {len(text):,}")
     print(f'Token number in the text: {len(tiktoken.get_encoding("gpt2").encode(text)):,}')
 
@@ -72,3 +78,7 @@ if __name__ == "__main__":
         shuffle=config.VAL_SHUFFLE,
         num_workers=config.NUM_WORKERS,
     )
+
+if __name__ == "__main__":
+    main()
+
