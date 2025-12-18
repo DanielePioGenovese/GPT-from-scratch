@@ -79,12 +79,12 @@ class FeedForward(nn.Module):
         return self.layers(x)
 
 class TransformerBlock(nn.Module):
-    def __init__(self, emb_dim, num_heads, mha_dropout, shortcut_dropout,hidden_dim, qkv_bias=False):
+    def __init__(self, emb_dim, num_heads, mha_dropout, shortcut_dropout,hidden_dim, max_length, qkv_bias=False):
         super().__init__()
         self.att = MultiHeadAttention(
             d_in=emb_dim,
             d_out=emb_dim,
-            context_length=emb_dim,
+            context_length=max_length,
             num_heads=num_heads,
             mha_dropout=mha_dropout,
             qkv_bias=qkv_bias
@@ -131,6 +131,7 @@ class GPTModel(nn.Module):
                     mha_dropout=mha_dropout,
                     shortcut_dropout=shortcut_dropout,
                     hidden_dim=4 * emb_dim,
+                    max_length=max_length,
                     qkv_bias=qkv_bias,
                 )
                 for _ in range(num_layers)

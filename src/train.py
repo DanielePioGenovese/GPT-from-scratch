@@ -3,11 +3,11 @@ import hydra
 from hydra.core.config_store import ConfigStore
 
 import requests
-from dataset import TransformerEmbedding, create_dataloader_v1
+from dataset import create_dataloader_v1
 from config import Config
 from model import GPTModel
 from text_generation import generate_text_simple
-import pathlib
+from utils import calc_loss_loader
 
 cs = ConfigStore.instance()
 cs.store(name='model_config', node=Config)
@@ -19,12 +19,6 @@ def main(cfg: Config):
 
     print(f"Dataset length (in characters): {len(text):,}")
     print(f'Token number in the text: {len(tiktoken.get_encoding("gpt2").encode(text)):,}')
-
-    embedder = TransformerEmbedding(
-        n_vocab=cfg.model.vocab_size,
-        max_length=cfg.model.max_length,
-        out_dim=cfg.model.embed_dim,
-    )
 
     model = GPTModel(
         vocab_size=cfg.model.vocab_size,
@@ -79,6 +73,16 @@ def main(cfg: Config):
         shuffle=cfg.dataset.val_shuffle,
         num_workers=cfg.dataset.num_workers,
     )
+
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    with torch.no_grad():
+        train_loss = calc_loss_loader(train_dataloader, model, device, num_batches=100)
+        val_loss = calc_loss_loader(val_dataloader, model, device, num_batches=100)
+    print(f"Initial train loss: {train_loss:.4f}")
+    print(f"Initial val loss: {val_loss:.4f}")
+
 
 if __name__ == "__main__":
     main()
