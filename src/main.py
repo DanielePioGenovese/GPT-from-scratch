@@ -9,20 +9,12 @@ from dataset import create_dataloader_v1
 from conf import Config
 from model import GPTModel
 from train import Trainer
+import pathlib
 
 cs = ConfigStore.instance()
 cs.store(name='model_config', node=Config)
 
-colab = False
-
-#---------
-if colab:
-    path = '/content/drive/MyDrive/AI Models/LLMFromScratch/GPTFrormScratch/src/conf'
-else:
-    path = r'D:\Python-Environments\LLM\GPTFrormScratch\src\conf'
-#---------
-
-@hydra.main(version_base=None, config_path=path, config_name="config")
+@hydra.main(version_base=None, config_path='conf', config_name="config")
 def main(cfg: Config):
 
     text = requests.get(cfg.dataset.url).text
