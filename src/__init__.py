@@ -1,1 +1,0 @@
-from test.text_generation import generate_text_simple

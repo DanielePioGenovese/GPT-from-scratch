@@ -1,10 +1,3 @@
-# conf/config.yaml
 defaults:
   - model: model_laptop
   - dataset: dataset_laptop
-
-
-
-  
-  # In Hydra/OmegaConf puoi fare riferimento ad altre variabili
-  # Supponendo che tu abbia definito embed_dim altrove o nello stesso file
