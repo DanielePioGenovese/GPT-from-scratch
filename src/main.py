@@ -1,4 +1,5 @@
 import tiktoken
+import torch
 import hydra
 from hydra.core.config_store import ConfigStore
 from tqdm import tqdm
@@ -12,7 +13,7 @@ from train import Trainer
 cs = ConfigStore.instance()
 cs.store(name='model_config', node=Config)
 
-colab = True
+colab = False
 
 #---------
 if colab:

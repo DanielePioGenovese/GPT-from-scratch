@@ -1,1 +1,1 @@
-from model import GPTModel
+from model.gpt import GPTModel

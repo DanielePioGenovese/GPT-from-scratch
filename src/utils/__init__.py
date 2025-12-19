@@ -1,1 +1,1 @@
-from utils import generate_text_simple
+from utils.utils import generate_text_simple

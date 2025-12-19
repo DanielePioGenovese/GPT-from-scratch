@@ -1,3 +1,1 @@
-# Running dei comandi
-
-make ciao: 
+# c
