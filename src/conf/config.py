@@ -22,7 +22,7 @@ class ModelConfig:
     eval_iter: int
     temperature: float
     top_k: Optional[int] = None
-    top_p: Optional[float] = None
+    top_p: Optional[int] = None
 
 @dataclass
 class DataConfig:

@@ -77,7 +77,8 @@ def main(cfg: Config):
         start_context="Once upon a time",
         tokenizer=tokenizer,
         temperature=cfg.model.temperature,
-        top_k=cfg.model.top_k
+        top_k=cfg.model.top_k,
+        top_p=cfg.model.top_p
     )
 
     epochs_tensor = torch.linspace(0, cfg.model.num_epochs, steps=len(train_losses))

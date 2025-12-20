@@ -31,12 +31,13 @@ class Trainer:
         context_size=128,
         temperature=1.0,
         top_k=None,
+        top_p=None
     ):
         model.eval()
         encoded = tokenizer.encode(start_context)
         input_ids = torch.tensor(encoded).unsqueeze(0).to(device)
         generated_ids = generate_text(
-            model, input_ids, max_new_tokens, context_size, temperature=temperature, top_k=top_k
+            model, input_ids, max_new_tokens, context_size, temperature=temperature, top_k=top_k, top_p=top_p
         )
         generated_text = tokenizer.decode(generated_ids.squeeze().tolist())
         print("Generated text sample:")
@@ -57,6 +58,7 @@ class Trainer:
         tokenizer,
         temperature=1.0,
         top_k=None,
+        top_p=None
     ):
         train_losses, val_losses, track_tokens_seen = [], [], []
         token_seen, global_step = 0, -1
@@ -101,7 +103,7 @@ class Trainer:
                     )
 
             self._generate_and_print_sample(
-                self.model, tokenizer, self.device, start_context, temperature=temperature, top_k=top_k
+                self.model, tokenizer, self.device, start_context, temperature=temperature, top_k=top_k, top_p=top_p
             )
 
         return train_losses, val_losses, track_tokens_seen
