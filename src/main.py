@@ -78,7 +78,9 @@ def main(cfg: Config):
         tokenizer=tokenizer,
         temperature=cfg.model.temperature,
         top_k=cfg.model.top_k,
-        top_p=cfg.model.top_p
+        top_p=cfg.model.top_p,
+        checkpoint_path=cfg.model.checkpoint_path,
+        use_checkpoint=cfg.model.use_checkpoint,
     )
 
     epochs_tensor = torch.linspace(0, cfg.model.num_epochs, steps=len(train_losses))

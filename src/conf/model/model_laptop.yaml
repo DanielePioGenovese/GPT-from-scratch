@@ -18,3 +18,5 @@ eval_iter: 5
 temperature: 1.5
 top_k: null
 top_p: null
+use_checkpoint: null
+checkpoint_path: checkpoint

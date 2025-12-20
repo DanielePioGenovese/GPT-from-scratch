@@ -11,3 +11,9 @@ wheels/
 outputs/
 src/outputs/
 **/outputs/
+
+# Checkpoints
+*.pth
+*.pt
+checkpoint/
+checkpoints/

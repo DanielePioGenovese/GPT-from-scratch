@@ -2,6 +2,7 @@ import torch
 from tqdm import tqdm
 from metrics import calc_loss_batch, calc_loss_loader
 from utils import generate_text
+from pathlib import Path
 
 class Trainer:
     """Trainer class to handle training and evaluation of the model."""
@@ -58,17 +59,31 @@ class Trainer:
         tokenizer,
         temperature=1.0,
         top_k=None,
-        top_p=None
+        top_p=None,
+        use_checkpoint:str=None, 
+        checkpoint_path='checkpoint'
     ):
-        train_losses, val_losses, track_tokens_seen = [], [], []
-        token_seen, global_step = 0, -1
+
+        current_file = Path(__file__).resolve()
+        project_root = current_file.parent.parent
+
+        chk_path = project_root / checkpoint_path
+        chk_path.mkdir(exist_ok=True)
 
         if optimizer != "adam":
             raise ValueError("Currently only 'adam' optimizer is supported.")
 
-        optimizer = torch.optim.AdamW(
+        optimizer = torch.optim.Adam(
             self.model.parameters(), lr=lr, weight_decay=weight_decay
         )
+
+        if use_checkpoint != None:
+            self.model.load_state_dict(torch.load(chk_path / use_checkpoint)['model_state_dict'])
+
+        train_losses, val_losses, track_tokens_seen = [], [], []
+        token_seen, global_step = 0, -1
+
+
 
         for epoch in range(num_epochs):
             self.model.train()
@@ -105,5 +120,16 @@ class Trainer:
             self._generate_and_print_sample(
                 self.model, tokenizer, self.device, start_context, temperature=temperature, top_k=top_k, top_p=top_p
             )
+
+            checkpoint = {
+                'epoch': epoch,
+                'model_state_dict': self.model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss':loss.item()
+            }
+
+            #Checkpoint
+            torch.save(checkpoint, chk_path / f'{epoch}.pth')
+
 
         return train_losses, val_losses, track_tokens_seen

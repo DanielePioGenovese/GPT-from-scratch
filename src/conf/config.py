@@ -21,8 +21,10 @@ class ModelConfig:
     eval_freq: int
     eval_iter: int
     temperature: float
+    checkpoint_path: str
     top_k: Optional[int] = None
     top_p: Optional[int] = None
+    use_checkpoint: Optional[str] = None
 
 @dataclass
 class DataConfig:
