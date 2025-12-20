@@ -3,15 +3,28 @@ import torch.nn as nn
 from model.blocks import TransformerBlock, LayerNorm
 from dataset import TransformerEmbedding
 
+
 class GPTModel(nn.Module):
-    def __init__(self, vocab_size, emb_dim, max_length, num_heads, num_layers,shortcut_dropout, mha_dropout, emb_dropout, qkv_bias=False):
+    def __init__(
+        self,
+        vocab_size,
+        emb_dim,
+        max_length,
+        num_heads,
+        num_layers,
+        shortcut_dropout,
+        mha_dropout,
+        emb_dropout,
+        qkv_bias=False,
+    ):
         super().__init__()
         self.tok_emb = TransformerEmbedding(
             n_vocab=vocab_size,
             max_length=max_length,
             out_dim=emb_dim,
-            emb_dropout=emb_dropout)
-        
+            emb_dropout=emb_dropout,
+        )
+
         self.trf_blocks = nn.ModuleList(
             [
                 TransformerBlock(
