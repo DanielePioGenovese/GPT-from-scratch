@@ -2,14 +2,13 @@ import tiktoken
 import torch
 import hydra
 from hydra.core.config_store import ConfigStore
-from tqdm import tqdm
 import requests
 import torch
 from dataset import create_dataloader_v1
 from conf import Config
 from model import GPTModel
 from train import Trainer
-import pathlib
+from utils import plot_losses
 
 cs = ConfigStore.instance()
 cs.store(name='model_config', node=Config)
@@ -77,6 +76,14 @@ def main(cfg: Config):
         start_context="Once upon a time",
         tokenizer=tokenizer
     )
+
+    epochs_tensor = torch.linspace(0, cfg.model.num_epochs, steps=len(train_losses))
+    plot_losses(
+        epochs_tensor,
+        tokens_seen,
+        train_losses,
+        val_losses
+    )    
 
 if __name__ == "__main__":
     main()
