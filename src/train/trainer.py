@@ -1,8 +1,7 @@
 import torch
 from tqdm import tqdm
 from metrics import calc_loss_batch, calc_loss_loader
-from utils import generate_text_simple
-
+from utils import generate_text
 
 class Trainer:
     """Trainer class to handle training and evaluation of the model."""
@@ -30,12 +29,14 @@ class Trainer:
         start_context,
         max_new_tokens=50,
         context_size=128,
+        temperature=1.0,
+        top_k=None,
     ):
         model.eval()
         encoded = tokenizer.encode(start_context)
         input_ids = torch.tensor(encoded).unsqueeze(0).to(device)
-        generated_ids = generate_text_simple(
-            model, input_ids, max_new_tokens, context_size
+        generated_ids = generate_text(
+            model, input_ids, max_new_tokens, context_size, temperature=temperature, top_k=top_k
         )
         generated_text = tokenizer.decode(generated_ids.squeeze().tolist())
         print("Generated text sample:")
@@ -54,7 +55,8 @@ class Trainer:
         eval_iter,
         start_context,
         tokenizer,
-        temperature,
+        temperature=1.0,
+        top_k=None,
     ):
         train_losses, val_losses, track_tokens_seen = [], [], []
         token_seen, global_step = 0, -1
@@ -74,7 +76,7 @@ class Trainer:
             for input_batch, target_batch in train_loader:
                 optimizer.zero_grad()
                 loss = calc_loss_batch(
-                    input_batch, target_batch, self.model, self.device, temperature
+                    input_batch, target_batch, self.model, self.device
                 )
                 loss.backward()
                 optimizer.step()
@@ -99,7 +101,7 @@ class Trainer:
                     )
 
             self._generate_and_print_sample(
-                self.model, tokenizer, self.device, start_context
+                self.model, tokenizer, self.device, start_context, temperature=temperature, top_k=top_k
             )
 
         return train_losses, val_losses, track_tokens_seen

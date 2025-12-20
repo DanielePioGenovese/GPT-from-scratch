@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+from typing import Optional
 
 @dataclass
 class ModelConfig:
@@ -21,7 +21,8 @@ class ModelConfig:
     eval_freq: int
     eval_iter: int
     temperature: float
-
+    top_k: Optional[int] = None
+    top_p: Optional[float] = None
 
 @dataclass
 class DataConfig:

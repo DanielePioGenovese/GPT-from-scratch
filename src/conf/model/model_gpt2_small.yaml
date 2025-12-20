@@ -16,3 +16,5 @@ num_epochs: 1
 eval_freq: 5
 eval_iter: 5
 temperature: 1.5
+top_k: null
+top_p: null

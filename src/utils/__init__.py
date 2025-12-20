@@ -1,1 +1,2 @@
-from utils.utils import generate_text_simple, plot_losses
+from utils.text_generation.generate import generate_text
+from utils.plotting.loss_plotting import plot_losses
