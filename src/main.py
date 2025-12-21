@@ -1,11 +1,13 @@
 import tiktoken
 import torch
 import hydra
-from hydra.core.config_store import ConfigStore
 import requests
-import torch
+from hydra.core.config_store import ConfigStore
+
+# Internal imports
 from dataset import create_dataloader_v1
-from conf import Config
+# Assuming Config is defined in conf.py
+from conf import Config  
 from model import GPTModel
 from train import Trainer
 from utils import plot_losses
@@ -13,11 +15,17 @@ from utils import plot_losses
 cs = ConfigStore.instance()
 cs.store(name="model_config", node=Config)
 
-
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: Config):
-    text = requests.get(cfg.dataset.url).text
+    print(f"Loading data from {cfg.dataset.url}...")
+    try:
+        text = requests.get(cfg.dataset.url).text
+    except Exception as e:
+        print(f"Failed to download data: {e}")
+        return
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
 
     model = GPTModel(
         vocab_size=cfg.model.vocab_size,
@@ -30,20 +38,18 @@ def main(cfg: Config):
         emb_dropout=cfg.model.emb_dropout_rate,
         qkv_bias=cfg.model.qkv_bias,
     )
+    
+    model.to(device)
 
     tokenizer = tiktoken.get_encoding("gpt2")
     trainer = Trainer(model, device)
 
-    print(f"Dataset length (in characters): {len(text):,}")
-    print(
-        f"Token number in the text: {len(tiktoken.get_encoding('gpt2').encode(text)):,}"
-    )
-
+    print(f"Dataset length (chars): {len(text):,}")
     print(f"Total params: {sum(p.numel() for p in model.parameters()):,}")
 
     split_idx = int(cfg.dataset.train_ratio * len(text))
-
-'''
+    
+    
     train_dataloader = create_dataloader_v1(
         text[:split_idx],
         batch_size=cfg.dataset.batch_size,
@@ -64,12 +70,10 @@ def main(cfg: Config):
         num_workers=cfg.dataset.num_workers,
     )
 
-    model.to(device)
-
     train_losses, val_losses, tokens_seen = trainer.train(
-        train_dataloader,
-        val_dataloader,
-        optimizer="adam",
+        train_loader=train_dataloader,
+        val_loader=val_dataloader,
+        optimizer_name="adam", # logic inside handles switch to AdamW
         lr=cfg.model.learning_rate,
         weight_decay=cfg.model.weight_decay,
         num_epochs=cfg.model.num_epochs,
@@ -84,9 +88,9 @@ def main(cfg: Config):
         use_checkpoint=cfg.model.use_checkpoint,
     )
 
+    # Plotting
     epochs_tensor = torch.linspace(0, cfg.model.num_epochs, steps=len(train_losses))
     plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
-'''
 
 if __name__ == "__main__":
     main()
