@@ -17,3 +17,6 @@ src/outputs/
 *.pt
 checkpoint/
 checkpoints/
+
+# Stuff
+Stuff

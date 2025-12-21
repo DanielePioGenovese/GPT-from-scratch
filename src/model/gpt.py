@@ -3,7 +3,6 @@ import torch.nn as nn
 from model.blocks import TransformerBlock, LayerNorm
 from dataset import TransformerEmbedding
 
-
 class GPTModel(nn.Module):
     def __init__(
         self,
@@ -42,6 +41,8 @@ class GPTModel(nn.Module):
 
         self.final_norm = LayerNorm(emb_dim)
         self.out_head = nn.Linear(emb_dim, vocab_size, bias=False)
+
+        self.out_head.weight = self.tok_emb.token_embedding.embedding.weight
 
     def forward(self, in_idx):
         x = self.tok_emb(in_idx)

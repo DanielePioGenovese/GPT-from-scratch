@@ -43,6 +43,7 @@ def main(cfg: Config):
 
     split_idx = int(cfg.dataset.train_ratio * len(text))
 
+'''
     train_dataloader = create_dataloader_v1(
         text[:split_idx],
         batch_size=cfg.dataset.batch_size,
@@ -85,7 +86,7 @@ def main(cfg: Config):
 
     epochs_tensor = torch.linspace(0, cfg.model.num_epochs, steps=len(train_losses))
     plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
-
+'''
 
 if __name__ == "__main__":
     main()

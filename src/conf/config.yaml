@@ -1,3 +1,3 @@
 defaults:
-  - model: model_laptop
-  - dataset: dataset_laptop
+  - model: model_gpt2_small
+  - dataset: dataset_gpt2_small

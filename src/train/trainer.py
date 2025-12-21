@@ -83,8 +83,6 @@ class Trainer:
         train_losses, val_losses, track_tokens_seen = [], [], []
         token_seen, global_step = 0, -1
 
-
-
         for epoch in range(num_epochs):
             self.model.train()
             progress_bar = tqdm(
