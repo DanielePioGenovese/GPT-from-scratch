@@ -8,3 +8,15 @@ wheels/
 
 # Virtual environments
 .venv
+outputs/
+src/outputs/
+**/outputs/
+
+# Checkpoints
+*.pth
+*.pt
+checkpoint/
+checkpoints/
+
+# Stuff
+stuff.txt
