@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+
 @dataclass
 class ModelConfig:
     num_heads: int
@@ -25,6 +26,7 @@ class ModelConfig:
     top_k: Optional[int] = None
     top_p: Optional[int] = None
     use_checkpoint: Optional[str] = None
+
 
 @dataclass
 class DataConfig:

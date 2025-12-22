@@ -1,9 +1,12 @@
 import torch
 import matplotlib.pyplot as plt
 
-def generate_text(model, idx, max_new_tokens, context_size, temperature=1.0, top_k=None, top_p=None):
+
+def generate_text(
+    model, idx, max_new_tokens, context_size, temperature=1.0, top_k=None, top_p=None
+):
     # Ensure model is in eval mode before entering loop (handled by caller usually, but safe to check)
-    
+
     for _ in range(max_new_tokens):
         # Crop context if it becomes too long
         idx_cond = idx[:, -context_size:]
@@ -25,14 +28,20 @@ def generate_text(model, idx, max_new_tokens, context_size, temperature=1.0, top
         # 3. Apply Top-P (Nucleus)
         if top_p is not None and top_p < 1.0:
             sorted_logits, sorted_indices = torch.sort(logits, descending=True)
-            cumulative_probs = torch.cumsum(torch.softmax(sorted_logits, dim=-1), dim=-1)
+            cumulative_probs = torch.cumsum(
+                torch.softmax(sorted_logits, dim=-1), dim=-1
+            )
 
             sorted_indices_to_remove = cumulative_probs > top_p
             # Shift the indices to keep at least the first token
-            sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+            sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[
+                ..., :-1
+            ].clone()
             sorted_indices_to_remove[..., 0] = 0
 
-            indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
+            indices_to_remove = sorted_indices_to_remove.scatter(
+                1, sorted_indices, sorted_indices_to_remove
+            )
             logits[indices_to_remove] = -float("Inf")
 
         # 4. Final Sampling
@@ -42,4 +51,3 @@ def generate_text(model, idx, max_new_tokens, context_size, temperature=1.0, top
         idx = torch.cat((idx, idx_next), dim=1)
 
     return idx
-

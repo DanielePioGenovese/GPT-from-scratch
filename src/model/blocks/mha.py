@@ -13,8 +13,8 @@ class MultiHeadAttention(nn.Module):
         self.d_out = d_out
         self.head_dim = d_out // num_heads
 
-        self.W_query = nn.Linear(d_in, d_out, bias=False)
-        self.W_key = nn.Linear(d_in, d_out, bias=False)
+        self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
         self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
 
         self.out_proj = nn.Linear(d_out, d_out)

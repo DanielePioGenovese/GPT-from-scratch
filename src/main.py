@@ -6,14 +6,16 @@ from hydra.core.config_store import ConfigStore
 
 # Internal imports
 from dataset import create_dataloader_v1
+
 # Assuming Config is defined in conf.py
-from conf import Config  
+from conf import Config
 from model import GPTModel
 from train import Trainer
 from utils import plot_losses
 
 cs = ConfigStore.instance()
 cs.store(name="model_config", node=Config)
+
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: Config):
@@ -38,7 +40,7 @@ def main(cfg: Config):
         emb_dropout=cfg.model.emb_dropout_rate,
         qkv_bias=cfg.model.qkv_bias,
     )
-    
+
     model.to(device)
 
     tokenizer = tiktoken.get_encoding("gpt2")
@@ -48,8 +50,7 @@ def main(cfg: Config):
     print(f"Total params: {sum(p.numel() for p in model.parameters()):,}")
 
     split_idx = int(cfg.dataset.train_ratio * len(text))
-    
-    
+
     train_dataloader = create_dataloader_v1(
         text[:split_idx],
         batch_size=cfg.dataset.batch_size,
@@ -73,7 +74,7 @@ def main(cfg: Config):
     train_losses, val_losses, tokens_seen = trainer.train(
         train_loader=train_dataloader,
         val_loader=val_dataloader,
-        optimizer_name="adam", # logic inside handles switch to AdamW
+        optimizer_name="AdamW",  
         lr=cfg.model.learning_rate,
         weight_decay=cfg.model.weight_decay,
         num_epochs=cfg.model.num_epochs,
@@ -91,6 +92,7 @@ def main(cfg: Config):
     # Plotting
     epochs_tensor = torch.linspace(0, cfg.model.num_epochs, steps=len(train_losses))
     plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
+
 
 if __name__ == "__main__":
     main()

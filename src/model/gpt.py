@@ -2,6 +2,7 @@ import torch.nn as nn
 from model.blocks import TransformerBlock, LayerNorm
 from dataset import TransformerEmbedding
 
+
 class GPTModel(nn.Module):
     def __init__(
         self,
