@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Assuming metrics are in metrics.py or similar
 from metrics import calc_loss_batch, calc_loss_loader
-from utils import generate_text
+from utils import generate_text, get_lr_scheduler, plot_lr_scheduler
 
 
 class Trainer:
@@ -72,9 +72,13 @@ class Trainer:
         top_p=None,
         use_checkpoint=None,
         checkpoint_path="checkpoint",
+        min_lr: float = 1e-6,
+        warmup_steps: int|None = None
     ):
         # Mixed precision scaler
         scaler = GradScaler()
+
+        save_lr = []
 
         # Fix: Use current working directory for checkpoints
         chk_path = Path(checkpoint_path)
@@ -91,6 +95,12 @@ class Trainer:
                 self.model.parameters(), lr=lr, weight_decay=weight_decay
             )
 
+        steps_per_epoch = len(train_loader)
+        max_steps = num_epochs * steps_per_epoch
+
+        if warmup_steps is None:
+            warmup_steps = max(1, int(0.20 * max_steps))
+
         # Load Checkpoint if requested
         start_epoch = 0
         if use_checkpoint is not None:
@@ -101,7 +111,9 @@ class Trainer:
             start_epoch = checkpoint["epoch"] + 1
 
         train_losses, val_losses, track_tokens_seen = [], [], []
-        token_seen, global_step = 0, -1
+        token_seen = 0 
+        global_step = start_epoch * steps_per_epoch - 1
+        max_lr = lr
 
         for epoch in range(start_epoch, num_epochs):
             self.model.train()
@@ -114,6 +126,21 @@ class Trainer:
                 loss = calc_loss_batch(
                     input_batch, target_batch, self.model, self.device
                 )
+
+                it_for_lr = global_step + 1
+                cur_lr = get_lr_scheduler(
+                    it_for_lr, 
+                    max_steps=max_steps, 
+                    max_lr=max_lr, 
+                    min_lr=min_lr, 
+                    warmup_steps=warmup_steps
+                )
+
+                save_lr.append(cur_lr)
+
+                for pg in optimizer.param_groups:
+                    pg['lr'] = cur_lr
+
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
@@ -121,7 +148,10 @@ class Trainer:
                 token_seen += input_batch.numel()
                 global_step += 1
 
-                progress_bar.set_postfix({"loss": f"{loss.item():.4f}"})
+                progress_bar.set_postfix({
+                    "loss": f"{loss.item():.4f}",
+                    "lr": f"{cur_lr:.2e}"
+                })
 
                 if global_step % eval_freq == 0:
                     train_loss, val_loss = self._evaluate_model(
@@ -149,10 +179,13 @@ class Trainer:
             # Save Checkpoint
             checkpoint = {
                 "epoch": epoch,
+                "global_step": global_step,
                 "model_state_dict": self.model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "loss": loss.item(),
             }
             torch.save(checkpoint, chk_path / f"epoch_{epoch}.pth")
+
+            plot_lr_scheduler(max_steps, save_lr)
 
         return train_losses, val_losses, track_tokens_seen
