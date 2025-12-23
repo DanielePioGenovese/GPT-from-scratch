@@ -13,7 +13,7 @@ layer_norm_eps: 0.00001
 learning_rate: 0.0005
 weight_decay: 0.1
 num_epochs: 1
-eval_freq: 10
+eval_freq: 20
 eval_iter: 5
 temperature: 1.5
 top_k: null
