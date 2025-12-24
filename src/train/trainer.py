@@ -58,7 +58,7 @@ class Trainer:
         model.train()
 
     def _checkpoint(
-        self, checkpoint_name, checkpoint_path, steps_per_epoch, chk_path, start_epoch
+        self, checkpoint_name, checkpoint_path, steps_per_epoch, chk_path, start_epoch, grad_accumulation_steps
     ):
         check_checkpoint = load_checkpoint(checkpoint_name, checkpoint_path)
 
@@ -77,7 +77,8 @@ class Trainer:
                     print("Exiting program.")
                     sys.exit()
             
-            return start_epoch, global_step
+            global_step, batches_to_skip = 0, 0
+            return start_epoch, global_step, batches_to_skip
         
         else:   
             print(f"Resuming from checkpoint: {check_checkpoint}")
@@ -86,12 +87,11 @@ class Trainer:
             )
             self.model.load_state_dict(checkpoint["model_state_dict"])
             self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-            start_epoch = checkpoint["epoch"] + 1
-            global_step = checkpoint.get(
-                "global_step", start_epoch * steps_per_epoch - 1
-            )
-
-            return start_epoch, global_step
+            start_epoch = checkpoint["epoch"] 
+            global_step = checkpoint['global_step']
+            batches_to_skip = (global_step + 1) * grad_accumulation_steps
+            
+            return start_epoch, global_step, batches_to_skip
 
     def _training_loop(
         self,
@@ -107,16 +107,18 @@ class Trainer:
         eval_freq,
         eval_iter,
         grad_accumulation_steps, 
+        global_step,
+        chk_path,
+        batches_to_skip
     ):
         train_losses, val_losses, track_tokens_seen, save_lr = [], [], [], []
         token_seen = 0
         max_lr = lr
         
-       
-        if not hasattr(self, 'global_step'): 
-             self.global_step = 0 
+        self.global_step = global_step if global_step >= 0 else 0
 
         self.optimizer.zero_grad(set_to_none=True) 
+        best_loss = torch.inf
 
         for epoch in range(start_epoch, num_epochs):
             self.model.train()
@@ -125,6 +127,11 @@ class Trainer:
             )
 
             for batch_idx, (input_batch, target_batch) in enumerate(progress_bar):
+
+                if epoch == start_epoch and batch_idx < batches_to_skip:
+                    if batch_idx % 100 == 0:
+                        progress_bar.set_description(f'Skipping batch {batch_idx}...')
+                    continue
 
                 loss = calc_loss_batch(
                     input_batch, target_batch, self.model, self.device
@@ -167,9 +174,13 @@ class Trainer:
                         track_tokens_seen.append(token_seen)
                         tqdm.write(f"Step {self.global_step}: Val loss {val_loss:.3f}")
                 
+                if loss < best_loss:
+                    best_loss = loss
+                    save_checkpoint(epoch, global_step, self.model, self.optimizer, loss, chk_path)
+                
                 token_seen += input_batch.numel()
 
-        return epoch, loss, save_lr, train_losses, val_losses, track_tokens_seen
+        return save_lr, train_losses, val_losses, track_tokens_seen
 
     def train(
         self,
@@ -228,11 +239,11 @@ class Trainer:
         start_epoch = 0
         global_step = -1
 
-        start_epoch, global_step = self._checkpoint(
-            checkpoint_name, checkpoint_path, raw_updates, chk_path, start_epoch
+        start_epoch, global_step, batches_to_skip = self._checkpoint(
+            checkpoint_name, checkpoint_path, raw_updates, chk_path, start_epoch, grad_accumulation_steps
         )
 
-        epoch, loss, save_lr, train_losses, val_losses, track_tokens_seen = self._training_loop(
+        save_lr, train_losses, val_losses, track_tokens_seen = self._training_loop(
             train_loader=train_loader,
             val_loader=val_loader,
             start_epoch=start_epoch,
@@ -247,7 +258,11 @@ class Trainer:
             grad_accumulation_steps=grad_accumulation_steps,
             
             eval_freq=eval_freq,
-            eval_iter=eval_iter
+            eval_iter=eval_iter,
+            
+            global_step=global_step,
+            chk_path=chk_path,
+            batches_to_skip=batches_to_skip
         )
 
         self._generate_and_print_sample(
@@ -260,7 +275,6 @@ class Trainer:
             top_p=top_p,
         )
 
-        save_checkpoint(epoch, global_step, self.model, self.optimizer, loss, chk_path)        
         plot_lr_scheduler(save_lr)
 
         return train_losses, val_losses, track_tokens_seen

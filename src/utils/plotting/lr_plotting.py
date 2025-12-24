@@ -3,6 +3,11 @@ import numpy as np
 
 
 def plot_lr_scheduler(lr_values: list):
+
+    if len(lr_values) == 0:
+        print('No sheduler data to plot.')
+        return 
+    
     try:
         actual_steps = np.arange(len(lr_values)) 
 
