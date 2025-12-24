@@ -1,3 +1,4 @@
+model_name: model_very_small
 num_heads: 2            
 num_layers: 3
 embed_dim: 12         
@@ -18,5 +19,7 @@ eval_iter: 5
 temperature: 1.5
 top_k: null
 top_p: null
-use_checkpoint: null
+use_checkpoint: last
 checkpoint_path: checkpoint
+min_lr: 1e-6
+warmup_steps: 300

@@ -71,6 +71,12 @@ def main(cfg: Config):
         num_workers=cfg.dataset.num_workers,
     )
 
+    print('\n')
+    print('===' * 5)
+    print('Model: ', cfg.model.model_name)
+    print('===' * 5)
+    print('\n')
+
     train_losses, val_losses, tokens_seen = trainer.train(
         train_loader=train_dataloader,
         val_loader=val_dataloader,
@@ -85,8 +91,10 @@ def main(cfg: Config):
         temperature=cfg.model.temperature,
         top_k=cfg.model.top_k,
         top_p=cfg.model.top_p,
+        checkpoint_name=cfg.model.use_checkpoint,
         checkpoint_path=cfg.model.checkpoint_path,
-        use_checkpoint=cfg.model.use_checkpoint,
+        min_lr=cfg.model.min_lr,
+        warmup_steps=cfg.model.warmup_steps
     )
 
     # Plotting

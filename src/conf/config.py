@@ -3,7 +3,8 @@ from typing import Optional
 
 
 @dataclass
-class ModelConfig:
+class ModelConfig:  
+    model_name: str
     num_heads: int
     num_layers: int
     qkv_bias: bool
@@ -23,10 +24,12 @@ class ModelConfig:
     eval_iter: int
     temperature: float
     checkpoint_path: str
+    min_lr: float
+    warmup_steps: int
     top_k: Optional[int] = None
     top_p: Optional[int] = None
-    use_checkpoint: Optional[str] = None
-
+    use_checkpoint: Optional[str] = 'last'
+    
 
 @dataclass
 class DataConfig:

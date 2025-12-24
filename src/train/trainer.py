@@ -3,10 +3,11 @@ from torch.amp import GradScaler
 
 from tqdm import tqdm
 from pathlib import Path
+import sys
 
 # Assuming metrics are in metrics.py or similar
 from metrics import calc_loss_batch, calc_loss_loader
-from utils import generate_text, get_lr_scheduler, plot_lr_scheduler
+from utils import generate_text, get_lr_scheduler, plot_lr_scheduler, load_checkpoint
 
 
 class Trainer:
@@ -52,7 +53,7 @@ class Trainer:
         )
 
         generated_text = tokenizer.decode(generated_ids.squeeze().tolist())
-        print(f"\n[Generated text sample]:\n{generated_text}\n")
+        print(f"\n[---Generated text sample---]:\n{generated_text}\n")
         model.train()
 
     def train(
@@ -70,7 +71,7 @@ class Trainer:
         temperature=1.0,
         top_k=None,
         top_p=None,
-        use_checkpoint=None,
+        checkpoint_name=None,
         checkpoint_path="checkpoint",
         min_lr: float = 1e-6,
         warmup_steps: int|None = None
@@ -99,20 +100,36 @@ class Trainer:
         max_steps = num_epochs * steps_per_epoch
 
         if warmup_steps is None:
-            warmup_steps = max(1, int(0.20 * max_steps))
+            warmup_steps = max(1, int(0.03 * max_steps))
 
         # Load Checkpoint if requested
         start_epoch = 0
-        if use_checkpoint is not None:
-            print(f"Resuming from checkpoint: {use_checkpoint}")
-            checkpoint = torch.load(chk_path / use_checkpoint, map_location=self.device)
+        global_step = -1
+
+        check_checkpoint = load_checkpoint(checkpoint_name, checkpoint_path)
+
+        if check_checkpoint == False:
+            while True:
+                prompt_check = input('Do you want continue with the training process (yes, no)? ').strip()
+                
+                if prompt_check not in ('yes', 'no'):
+                    print('Type a valid value!')
+                elif prompt_check == 'yes':
+                    global_step = start_epoch * steps_per_epoch - 1    
+                    break
+                else:
+                    print('Exiting program.')
+                    sys.exit()
+        else:
+            print(f"Resuming from checkpoint: {check_checkpoint}")
+            checkpoint = torch.load(chk_path / check_checkpoint, map_location=self.device)
             self.model.load_state_dict(checkpoint["model_state_dict"])
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
             start_epoch = checkpoint["epoch"] + 1
+            global_step = checkpoint.get('global_step', start_epoch * steps_per_epoch - 1)
 
         train_losses, val_losses, track_tokens_seen = [], [], []
         token_seen = 0 
-        global_step = start_epoch * steps_per_epoch - 1
         max_lr = lr
 
         for epoch in range(start_epoch, num_epochs):
@@ -186,6 +203,6 @@ class Trainer:
             }
             torch.save(checkpoint, chk_path / f"epoch_{epoch}.pth")
 
-            plot_lr_scheduler(max_steps, save_lr)
+        plot_lr_scheduler(max_steps, save_lr)
 
         return train_losses, val_losses, track_tokens_seen
