@@ -1,6 +1,7 @@
 import torch
 from torch.amp import autocast
 
+
 def calc_loss_batch(input_batch, target_batch, model, device):
     input_batch = input_batch.to(device)
     target_batch = target_batch.to(device)

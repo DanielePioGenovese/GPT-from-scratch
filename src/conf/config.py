@@ -1,36 +1,38 @@
 from dataclasses import dataclass
 from typing import Optional
 
-
 @dataclass
-class ModelConfig:  
+class ModelConfig:
     model_name: str
-    num_heads: int
+    checkpoint_path: str
+    vocab_size: int
+    embed_dim: int
+    ff_hidden_dim: int
     num_layers: int
+    num_heads: int
+    max_length: int          
+    output_dim: int
+    layer_norm_eps: float
     qkv_bias: bool
     mha_dropout_rate: float
     ffn_dropout_rate: float
     emb_dropout_rate: float
-    layer_norm_eps: float
-    embed_dim: int
-    ff_hidden_dim: int
-    output_dim: int
-    vocab_size: int
-    max_length: int
-    learning_rate: float
+    learning_rate: float    
+    min_lr: float            
     weight_decay: float
-    num_epochs: int
-    eval_freq: int
-    eval_iter: int
-    temperature: float
-    checkpoint_path: str
-    min_lr: float
     warmup_steps: int
-    top_k: Optional[int] = None
-    top_p: Optional[int] = None
-    use_checkpoint: Optional[str] = 'last'
-    
+    num_epochs: int
+    micro_batch_size: int    
+    grad_accumulation: int 
+    eval_freq: int           
+    eval_iter: int           
+    temperature: float
 
+    use_checkpoint: Optional[str] = "last"
+    top_k: Optional[int] = None
+    top_p: Optional[float] = None
+
+    
 @dataclass
 class DataConfig:
     url: str

@@ -1,25 +1,32 @@
 model_name: model_very_small
-num_heads: 2            
+# --- Architecture ---
+num_heads: 2
 num_layers: 3
-embed_dim: 12         
-ff_hidden_dim: 256     
-max_length: 128          
+embed_dim: 12
+ff_hidden_dim: 256
+max_length: 128
 vocab_size: 50257
 output_dim: 50257
+# --- Regularization ---
 qkv_bias: false
 mha_dropout_rate: 0.1
 ffn_dropout_rate: 0.1
 emb_dropout_rate: 0.1
 layer_norm_eps: 0.00001
-learning_rate: 0.0005
+# --- Optimization ---
+learning_rate: 0.001      
 weight_decay: 0.1
-num_epochs: 1
-eval_freq: 20
+min_lr: 1e-5               
+warmup_steps: 100          
+# --- Training Loop Dynamics ---
+micro_batch_size: 64       
+grad_accumulation: 1 
+num_epochs: 1              
+# --- Checkpointing & Eval ---
+eval_freq: 50
 eval_iter: 5
-temperature: 1.5
-top_k: null
-top_p: null
+temperature: 1.0
+top_k: 50                 
+top_p: 0.9
 use_checkpoint: last
 checkpoint_path: checkpoint
-min_lr: 1e-6
-warmup_steps: 300

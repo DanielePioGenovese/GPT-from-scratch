@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import tiktoken
 
+
 class GPTDatasetV1(Dataset):
     def __init__(self, txt, tokenizer, max_length, stride):
         super().__init__()
@@ -15,10 +16,12 @@ class GPTDatasetV1(Dataset):
 
         # Tokenize
         token_ids = tokenizer.encode(txt, allowed_special={"<|endoftext|>"})
-        
+
         # Validation
         if len(token_ids) <= max_length:
-            raise ValueError(f"Text is too short ({len(token_ids)} tokens) for max_length={max_length}.")
+            raise ValueError(
+                f"Text is too short ({len(token_ids)} tokens) for max_length={max_length}."
+            )
 
         # Sliding window
         for i in range(0, len(token_ids) - max_length, stride):
@@ -33,6 +36,7 @@ class GPTDatasetV1(Dataset):
 
     def __getitem__(self, idx):
         return self.input_ids[idx], self.target_ids[idx]
+
 
 def create_dataloader_v1(
     txt,
@@ -98,6 +102,3 @@ class TransformerEmbedding(torch.nn.Module):
         combined_embeds = token_embeds + pos_embeds
 
         return self.dropout(combined_embeds)
-
-
-

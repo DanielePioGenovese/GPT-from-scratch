@@ -46,6 +46,8 @@ def main(cfg: Config):
     tokenizer = tiktoken.get_encoding("gpt2")
     trainer = Trainer(model, device)
 
+    total_tokens = len(tokenizer.encode(text))
+
     print(f"Dataset length (chars): {len(text):,}")
     print(f"Total params: {sum(p.numel() for p in model.parameters()):,}")
 
@@ -71,30 +73,43 @@ def main(cfg: Config):
         num_workers=cfg.dataset.num_workers,
     )
 
-    print('\n')
-    print('===' * 5)
-    print('Model: ', cfg.model.model_name)
-    print('===' * 5)
-    print('\n')
+    print("\n")
+    print("===" * 5)
+    print("Model: ", cfg.model.model_name)
+    print("===" * 5)
+    print("\n")
 
     train_losses, val_losses, tokens_seen = trainer.train(
+        # --- Data & Tokenizer ---
         train_loader=train_dataloader,
         val_loader=val_dataloader,
-        optimizer_name="AdamW",  
-        lr=cfg.model.learning_rate,
-        weight_decay=cfg.model.weight_decay,
-        num_epochs=cfg.model.num_epochs,
-        eval_freq=500,
-        eval_iter=100,
-        start_context="Once upon a time",
         tokenizer=tokenizer,
+        total_tokens=total_tokens,             
+        seq_len=cfg.model.max_length,         
+        
+        # --- Optimization & Scaling ---
+        optimizer_name="AdamW",
+        lr=cfg.model.learning_rate,
+        min_lr=cfg.model.min_lr,
+        weight_decay=cfg.model.weight_decay,
+        warmup_steps=cfg.model.warmup_steps,
+        num_epochs=cfg.model.num_epochs,
+        micro_batch_size=cfg.model.micro_batch_size,
+        grad_accumulation_steps=cfg.model.grad_accumulation,
+        
+        # --- Monitoring & Eval ---
+        eval_freq=cfg.model.eval_freq,
+        eval_iter=cfg.model.eval_iter,
+        
+        # --- Text Generation (Testing) ---
+        start_context="Once upon a time",
         temperature=cfg.model.temperature,
         top_k=cfg.model.top_k,
         top_p=cfg.model.top_p,
+        
+        # --- Checkpointing ---
         checkpoint_name=cfg.model.use_checkpoint,
-        checkpoint_path=cfg.model.checkpoint_path,
-        min_lr=cfg.model.min_lr,
-        warmup_steps=cfg.model.warmup_steps
+        checkpoint_path=cfg.model.checkpoint_path
     )
 
     # Plotting
