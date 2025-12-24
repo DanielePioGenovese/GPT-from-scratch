@@ -162,8 +162,8 @@ class Trainer:
                         train_loss, val_loss = self._evaluate_model(
                             self.model, train_loader, val_loader, self.device, eval_iter
                         )
-                        train_losses.append(train_loss)
-                        val_losses.append(val_loss)
+                        train_losses.append(train_loss.item() if isinstance(train_loss, torch.Tensor) else train_loss)
+                        val_losses.append(val_loss.item() if isinstance(val_loss, torch.Tensor) else val_loss)
                         track_tokens_seen.append(token_seen)
                         tqdm.write(f"Step {self.global_step}: Val loss {val_loss:.3f}")
                 
@@ -215,9 +215,11 @@ class Trainer:
 
         self.optimizer = optimizer
 
+        num_updates_per_epoch = len(train_loader) // grad_accumulation_steps
+        total_steps = num_updates_per_epoch * num_epochs
+
         tokens_per_update = micro_batch_size * seq_len * grad_accumulation_steps
         raw_updates = (total_tokens * num_epochs) / tokens_per_update
-        total_steps = math.ceil(raw_updates)
 
         if warmup_steps is None:
             warmup_steps = max(1, int(0.03 * total_steps))
@@ -247,6 +249,7 @@ class Trainer:
             eval_freq=eval_freq,
             eval_iter=eval_iter
         )
+
         self._generate_and_print_sample(
             self.model,
             tokenizer,
@@ -258,6 +261,6 @@ class Trainer:
         )
 
         save_checkpoint(epoch, global_step, self.model, self.optimizer, loss, chk_path)        
-        plot_lr_scheduler(total_steps, save_lr)
+        plot_lr_scheduler(save_lr)
 
         return train_losses, val_losses, track_tokens_seen

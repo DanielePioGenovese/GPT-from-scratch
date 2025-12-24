@@ -2,9 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_lr_scheduler(steps_number, lr_values: list):
+def plot_lr_scheduler(lr_values: list):
     try:
-        # Ignore the passed steps_number and use the actual length of the data
         actual_steps = np.arange(len(lr_values)) 
 
         plt.figure()
