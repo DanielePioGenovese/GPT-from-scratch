@@ -4,31 +4,17 @@ import hydra
 import requests
 from hydra.core.config_store import ConfigStore
 
-from dataset import create_dataloader_v1, GPTDatasetV1
-
-from datasets import load_dataset
+from dataset import create_dataloader_v1
 
 from conf import Config
 from model import GPTModel
 from train import Trainer
-from utils import plot_losses
+from utils import plot_losses, prepare_data
 import numpy as np
 import os
 
 cs = ConfigStore.instance()
 cs.store(name="model_config", node=Config)
-
-def prepare_data():
-    tokenizer = tiktoken.get_encoding('gpt2')
-    ds = load_dataset("roneneldan/TinyStories", split='train', streaming=True)
-
-    print("Creating dataset_train.bin...")
-    with open('dataset_train.bin', 'wb') as f:
-        for i, example in enumerate(ds):
-            tokens = tokenizer.encode(example['text'], allowed_special={'<|endoftext|>'})
-            tokens.append(50256) # <|endoftext|>
-            f.write(np.array(tokens, dtype=np.uint16).tobytes())
-            if i % 10000 == 0: print(f"Procecessed {i} stories...")
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: Config):
@@ -79,6 +65,10 @@ def main(cfg: Config):
         qkv_bias=cfg.model.qkv_bias,
     )
 
+
+    number_of_paramers = sum(p.numel() for p in model.parameters() if p.requires_grad) 
+    print(f'Number of model parameters :{number_of_paramers:,}')
+    
     model.to(device)
 
     trainer = Trainer(model, device)
