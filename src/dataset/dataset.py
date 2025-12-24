@@ -2,44 +2,32 @@ import tiktoken
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-
-import torch
-from torch.utils.data import Dataset, DataLoader
 import tiktoken
 
 
 class GPTDatasetV1(Dataset):
-    def __init__(self, txt, tokenizer, max_length, stride):
+    def __init__(self, token_ids, max_length, stride):
         super().__init__()
-        self.input_ids = []
-        self.target_ids = []
-
-        # Tokenize
-        token_ids = tokenizer.encode(txt, allowed_special={"<|endoftext|>"})
-
-        # Validation
-        if len(token_ids) <= max_length:
-            raise ValueError(
-                f"Text is too short ({len(token_ids)} tokens) for max_length={max_length}."
-            )
-
-        # Sliding window
-        for i in range(0, len(token_ids) - max_length, stride):
-            input_chunk = token_ids[i : i + max_length]
-            target_chunk = token_ids[i + 1 : i + max_length + 1]
-
-            self.input_ids.append(torch.tensor(input_chunk))
-            self.target_ids.append(torch.tensor(target_chunk))
+        self.input_ids = token_ids
+        self.max_length = max_length
+        self.stride = stride
 
     def __len__(self):
-        return len(self.input_ids)
+        return (len(self.input_ids) - self.max_length) // self.stride
 
     def __getitem__(self, idx):
-        return self.input_ids[idx], self.target_ids[idx]
+        start_idx = idx * self.stride
+        end_idx = start_idx + self.max_length
+        
+        input_chunk = self.input_ids[start_idx:end_idx]
+        target_chunk = self.input_ids[start_idx + 1 : end_idx + 1]
+
+        return input_chunk, target_chunk
+
 
 
 def create_dataloader_v1(
-    txt,
+    token_ids, 
     batch_size,
     max_length=256,
     stride=128,
@@ -47,8 +35,7 @@ def create_dataloader_v1(
     drop_last=True,
     num_workers=0,
 ):
-    tokenizer = tiktoken.get_encoding("gpt2")
-    dataset = GPTDatasetV1(txt, tokenizer, max_length, stride)
+    dataset = GPTDatasetV1(token_ids, max_length, stride)
 
     dataloader = DataLoader(
         dataset,
@@ -57,7 +44,6 @@ def create_dataloader_v1(
         drop_last=drop_last,
         num_workers=num_workers,
     )
-
     return dataloader
 
 
@@ -73,20 +59,13 @@ class InputEmbeddings(torch.nn.Module):
 class PositionalEmbedding(torch.nn.Module):
     def __init__(self, max_length, out_dim):
         super().__init__()
-        position = torch.arange(max_length).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, out_dim, 2) * -(torch.log(torch.tensor(10000.0)) / out_dim)
-        )
-        pe = torch.zeros(max_length, out_dim)
-
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-
-        self.register_buffer("pe", pe.unsqueeze(0))
+        # GPT impara le posizioni come se fossero parole
+        self.pos_embedding = torch.nn.Embedding(max_length, out_dim)
 
     def forward(self, input_ids):
-        sequence_length = input_ids.size(1)
-        return self.pe[:, :sequence_length]
+        batch_size, seq_len = input_ids.shape
+        positions = torch.arange(seq_len, device=input_ids.device)
+        return self.pos_embedding(positions)
 
 
 class TransformerEmbedding(torch.nn.Module):

@@ -4,30 +4,68 @@ import hydra
 import requests
 from hydra.core.config_store import ConfigStore
 
-# Internal imports
-from dataset import create_dataloader_v1
+from dataset import create_dataloader_v1, GPTDatasetV1
 
-# Assuming Config is defined in conf.py
+from datasets import load_dataset
+
 from conf import Config
 from model import GPTModel
 from train import Trainer
 from utils import plot_losses
+import numpy as np
+import os
 
 cs = ConfigStore.instance()
 cs.store(name="model_config", node=Config)
 
+def prepare_data():
+    tokenizer = tiktoken.get_encoding('gpt2')
+    ds = load_dataset("roneneldan/TinyStories", split='train', streaming=True)
+
+    print("Creating dataset_train.bin...")
+    with open('dataset_train.bin', 'wb') as f:
+        for i, example in enumerate(ds):
+            tokens = tokenizer.encode(example['text'], allowed_special={'<|endoftext|>'})
+            tokens.append(50256) # <|endoftext|>
+            f.write(np.array(tokens, dtype=np.uint16).tobytes())
+            if i % 10000 == 0: print(f"Procecessed {i} stories...")
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: Config):
-    print(f"Loading data from {cfg.dataset.url}...")
-    try:
-        text = requests.get(cfg.dataset.url).text
-    except Exception as e:
-        print(f"Failed to download data: {e}")
-        return
+
+    if not os.path.exists('dataset_train.bin'):
+        prepare_data()
+
+    data_map = np.memmap('dataset_train.bin', dtype=np.uint16, mode='r')
+    token_ids_tensor = torch.from_numpy(data_map.astype(np.int64))
+    total_tokens = len(token_ids_tensor)
+    
+    print(f"Dataset on the disk, total tokens: {total_tokens:,}")
+
+    split_idx = int(cfg.dataset.train_ratio * total_tokens)
+    train_data = token_ids_tensor[:split_idx]
+    val_data = token_ids_tensor[split_idx:]
+
+    train_dataloader = create_dataloader_v1(
+        train_data,
+        batch_size=cfg.model.micro_batch_size,
+        max_length=cfg.model.max_length,
+        stride=cfg.model.max_length, 
+        shuffle=cfg.dataset.train_shuffle,
+        num_workers=cfg.dataset.num_workers,
+    )
+
+    val_dataloader = create_dataloader_v1(
+        val_data,
+        batch_size=cfg.model.micro_batch_size,
+        max_length=cfg.model.max_length,
+        stride=cfg.model.max_length,
+        shuffle=False,
+        num_workers=cfg.dataset.num_workers,
+    )
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
+    tokenizer = tiktoken.get_encoding("gpt2")
 
     model = GPTModel(
         vocab_size=cfg.model.vocab_size,
@@ -43,35 +81,7 @@ def main(cfg: Config):
 
     model.to(device)
 
-    tokenizer = tiktoken.get_encoding("gpt2")
     trainer = Trainer(model, device)
-
-    total_tokens = len(tokenizer.encode(text))
-
-    print(f"Dataset length (chars): {len(text):,}")
-    print(f"Total params: {sum(p.numel() for p in model.parameters()):,}")
-
-    split_idx = int(cfg.dataset.train_ratio * len(text))
-
-    train_dataloader = create_dataloader_v1(
-        text[:split_idx],
-        batch_size=cfg.dataset.batch_size,
-        max_length=cfg.model.max_length,
-        stride=cfg.dataset.stride,
-        drop_last=cfg.dataset.train_drop_last,
-        shuffle=cfg.dataset.train_shuffle,
-        num_workers=cfg.dataset.num_workers,
-    )
-
-    val_dataloader = create_dataloader_v1(
-        text[split_idx:],
-        batch_size=cfg.dataset.batch_size,
-        max_length=cfg.model.max_length,
-        stride=cfg.dataset.stride,
-        drop_last=cfg.dataset.val_drop_last,
-        shuffle=cfg.dataset.val_shuffle,
-        num_workers=cfg.dataset.num_workers,
-    )
 
     print("\n")
     print("===" * 5)

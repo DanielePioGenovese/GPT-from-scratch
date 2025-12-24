@@ -15,6 +15,7 @@ dependencies = [
     "torchaudio",
     "pathlib>=1.0.1",
     "matplotlib>=3.10.8",
+    "datasets>=4.4.2",
 ]
 
 [[tool.uv.index]]

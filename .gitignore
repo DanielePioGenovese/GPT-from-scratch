@@ -23,3 +23,6 @@ stuff.txt
 
 # 
 .vscode/
+
+#Dataset
+dataset_train.bin
