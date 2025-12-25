@@ -1,5 +1,6 @@
 import tiktoken
 from datasets import load_dataset
+import numpy as np
 
 def prepare_data():
     tokenizer = tiktoken.get_encoding('gpt2')

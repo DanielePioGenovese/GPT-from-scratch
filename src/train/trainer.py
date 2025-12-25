@@ -64,9 +64,11 @@ class Trainer:
 
         if check_checkpoint == False:
             while True:
-                prompt_check = input(
+
+                prompt_check = 'yes'
+                '''prompt_check = input(
                     "Do you want continue with the training process (yes, no)? "
-                ).strip()
+                ).strip()'''
 
                 if prompt_check not in ("yes", "no"):
                     print("Type a valid value!")
@@ -93,6 +95,7 @@ class Trainer:
             
             return start_epoch, global_step, batches_to_skip
 
+    
     def _training_loop(
         self,
         lr,
@@ -116,72 +119,116 @@ class Trainer:
         max_lr = lr
         
         self.global_step = global_step if global_step >= 0 else 0
+        
+        self.last_best_checkpoint = None 
 
         self.optimizer.zero_grad(set_to_none=True) 
         best_loss = torch.inf
 
-        for epoch in range(start_epoch, num_epochs):
-            self.model.train()
-            progress_bar = tqdm(
-                train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}", leave=True
+        print(f"Starting training. Total steps: {max_steps}. Initial Global Step: {self.global_step}")
+        if batches_to_skip > 0:
+            print(f"Resuming... skipping first {batches_to_skip} batches of epoch {start_epoch+1}.")
+
+        try: 
+            for epoch in range(start_epoch, num_epochs):
+                self.model.train()
+                progress_bar = tqdm(
+                    train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}", leave=True
+                )
+
+                for batch_idx, (input_batch, target_batch) in enumerate(progress_bar):
+                    
+                    if epoch == start_epoch and batch_idx < batches_to_skip:
+                        if batch_idx % 1000 == 0 and batch_idx > 0:
+                            progress_bar.set_description(f'Skipping batch {batch_idx}...')
+                        continue
+
+                    loss = calc_loss_batch(
+                        input_batch, target_batch, self.model, self.device
+                    ) / grad_accumulation_steps 
+
+                    scaler.scale(loss).backward()
+
+                    if (batch_idx + 1) % grad_accumulation_steps == 0:
+                        
+                        it_for_lr = self.global_step + 1
+                        cur_lr = get_lr_scheduler(
+                            it_for_lr,
+                            max_steps=max_steps,
+                            max_lr=max_lr,
+                            min_lr=min_lr,
+                            warmup_steps=warmup_steps,
+                        )
+                        save_lr.append(cur_lr)
+
+                        for pg in self.optimizer.param_groups:
+                            pg["lr"] = cur_lr
+
+                        scaler.step(self.optimizer)
+                        scaler.update()
+                        self.optimizer.zero_grad(set_to_none=True)
+                        
+                        self.global_step += 1 
+
+                        if self.global_step % 10 == 0:
+                            progress_bar.set_postfix(
+                                {"loss": f"{loss.item() * grad_accumulation_steps:.4f}", "lr": f"{cur_lr:.2e}", "step": self.global_step}
+                            )
+
+                        if self.global_step % eval_freq == 0:
+                            train_loss, val_loss = self._evaluate_model(
+                                self.model, train_loader, val_loader, self.device, eval_iter
+                            )
+                            t_loss_val = train_loss.item() if isinstance(train_loss, torch.Tensor) else train_loss
+                            v_loss_val = val_loss.item() if isinstance(val_loss, torch.Tensor) else val_loss
+                            
+                            train_losses.append(t_loss_val)
+                            val_losses.append(v_loss_val)
+                            track_tokens_seen.append(token_seen)
+                            tqdm.write(f"Step {self.global_step}: Val loss {v_loss_val:.3f}")
+                    
+                    actual_loss = loss.item() * grad_accumulation_steps
+                    
+                    if actual_loss < best_loss:
+                        best_loss = actual_loss
+                        
+                        new_filename = f"step_{self.global_step}.pth"
+                        
+                        if self.last_best_checkpoint is not None:
+                            old_path = chk_path / self.last_best_checkpoint
+                            if old_path.exists():
+                                try:
+                                    import os
+                                    os.remove(old_path)
+                                except OSError as e:
+                                    print(f"Warning: could not delete old checkpoint: {e}")
+
+                        save_checkpoint(
+                            epoch, self.global_step, self.model, self.optimizer, actual_loss, chk_path, 
+                            filename=new_filename
+                        )
+                        
+                        self.last_best_checkpoint = new_filename
+                    
+                    token_seen += input_batch.numel()
+        
+        except KeyboardInterrupt:
+            print('\n\n!!! KeyboardInterruction (Ctrl+C) !!!')
+            print('Saving the model...')
+            
+            save_checkpoint(
+                epoch=epoch, 
+                step=self.global_step, 
+                model=self.model, 
+                optimizer=self.optimizer, 
+                loss=loss.item() * grad_accumulation_steps, 
+                chk_path=chk_path,
+                filename="last_interrupted.pth" 
             )
-
-            for batch_idx, (input_batch, target_batch) in enumerate(progress_bar):
-
-                if epoch == start_epoch and batch_idx < batches_to_skip:
-                    if batch_idx % 100 == 0:
-                        progress_bar.set_description(f'Skipping batch {batch_idx}...')
-                    continue
-
-                loss = calc_loss_batch(
-                    input_batch, target_batch, self.model, self.device
-                ) / grad_accumulation_steps 
-
-                scaler.scale(loss).backward()
-
-                if (batch_idx + 1) % grad_accumulation_steps == 0:
-                    
-                    it_for_lr = self.global_step + 1
-                    cur_lr = get_lr_scheduler(
-                        it_for_lr,
-                        max_steps=max_steps,
-                        max_lr=max_lr,
-                        min_lr=min_lr,
-                        warmup_steps=warmup_steps,
-                    )
-                    save_lr.append(cur_lr)
-
-                    for pg in self.optimizer.param_groups:
-                        pg["lr"] = cur_lr
-
-                    scaler.step(self.optimizer)
-                    scaler.update()
-                    self.optimizer.zero_grad(set_to_none=True) # Reset gradienti
-                    
-                    self.global_step += 1 
-
-                    if self.global_step % 10 == 0:
-                        progress_bar.set_postfix(
-                            {"loss": f"{loss.item() * grad_accumulation_steps:.4f}", "lr": f"{cur_lr:.2e}", "step": self.global_step}
-                        )
-
-                    if self.global_step % eval_freq == 0:
-                        train_loss, val_loss = self._evaluate_model(
-                            self.model, train_loader, val_loader, self.device, eval_iter
-                        )
-                        train_losses.append(train_loss.item() if isinstance(train_loss, torch.Tensor) else train_loss)
-                        val_losses.append(val_loss.item() if isinstance(val_loss, torch.Tensor) else val_loss)
-                        track_tokens_seen.append(token_seen)
-                        tqdm.write(f"Step {self.global_step}: Val loss {val_loss:.3f}")
-                
-                if loss < best_loss:
-                    best_loss = loss
-                    save_checkpoint(epoch, global_step, self.model, self.optimizer, loss, chk_path)
-                
-                token_seen += input_batch.numel()
+            print('Saving completed')
+            sys.exit(0)
 
         return save_lr, train_losses, val_losses, track_tokens_seen
-
     def train(
         self,
         train_loader,
