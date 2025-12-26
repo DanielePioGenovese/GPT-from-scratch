@@ -28,10 +28,11 @@ class ModelConfig:
     eval_iter: int           
     temperature: float
 
-    use_checkpoint: Optional[str] = "last"
+    checkpoint_name: Optional[str] = "last"
     top_k: Optional[int] = None
     top_p: Optional[float] = None
-
+    prompt: Optional[str] = 'Once upon a time'
+    max_new_tokens: Optional[int] = 250
     
 @dataclass
 class DataConfig:

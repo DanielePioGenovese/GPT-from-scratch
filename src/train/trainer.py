@@ -8,7 +8,7 @@ import math
 
 # Assuming metrics are in metrics.py or similar
 from metrics import calc_loss_batch, calc_loss_loader
-from utils import generate_text, get_lr_scheduler, plot_lr_scheduler, load_checkpoint, save_checkpoint
+from utils import get_lr_scheduler, plot_lr_scheduler, load_checkpoint, save_checkpoint, generate_and_print_sample
 
 
 class Trainer:
@@ -25,37 +25,6 @@ class Trainer:
         val_loss = calc_loss_loader(val_loader, model, device, num_batches)
         model.train()
         return train_loss, val_loss
-
-    @torch.no_grad()
-    def _generate_and_print_sample(
-        self,
-        model,
-        tokenizer,
-        device,
-        start_context,
-        max_new_tokens=50,
-        context_size=128,
-        temperature=1.0,
-        top_k=None,
-        top_p=None,
-    ):
-        model.eval()
-        encoded = tokenizer.encode(start_context)
-        input_ids = torch.tensor(encoded).unsqueeze(0).to(device)
-
-        generated_ids = generate_text(
-            model,
-            input_ids,
-            max_new_tokens,
-            context_size,
-            temperature=temperature,
-            top_k=top_k,
-            top_p=top_p,
-        )
-
-        generated_text = tokenizer.decode(generated_ids.squeeze().tolist())
-        print(f"\n[---Generated text sample---]:\n{generated_text}\n")
-        model.train()
 
     def _checkpoint(
         self, checkpoint_name, checkpoint_path, steps_per_epoch, chk_path, start_epoch, grad_accumulation_steps
@@ -229,6 +198,7 @@ class Trainer:
             sys.exit(0)
 
         return save_lr, train_losses, val_losses, track_tokens_seen
+
     def train(
         self,
         train_loader,
@@ -312,7 +282,7 @@ class Trainer:
             batches_to_skip=batches_to_skip
         )
 
-        self._generate_and_print_sample(
+        generate_and_print_sample(
             self.model,
             tokenizer,
             self.device,

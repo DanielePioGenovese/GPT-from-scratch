@@ -51,3 +51,33 @@ def generate_text(
         idx = torch.cat((idx, idx_next), dim=1)
 
     return idx
+
+@torch.no_grad()
+def generate_and_print_sample(
+        model,
+        tokenizer,
+        device,
+        start_context,
+        max_new_tokens=50,
+        context_size=128,
+        temperature=1.0,
+        top_k=None,
+        top_p=None,
+    ):
+        model.eval()
+        encoded = tokenizer.encode(start_context)
+        input_ids = torch.tensor(encoded).unsqueeze(0).to(device)
+
+        generated_ids = generate_text(
+            model,
+            input_ids,
+            max_new_tokens,
+            context_size,
+            temperature=temperature,
+            top_k=top_k,
+            top_p=top_p,
+        )
+
+        generated_text = tokenizer.decode(generated_ids.squeeze().tolist())
+        print(f"\n[---Generated text sample---]:\n{generated_text}\n")
+        model.train()

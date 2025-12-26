@@ -28,5 +28,8 @@ eval_iter: 10
 temperature: 1.2
 top_k: 50
 top_p: 0.95
-use_checkpoint: last
+checkpoint_name: last
 checkpoint_path: checkpoint
+# --- Inference ---
+prompt: Once upon a time
+max_new_tokens: 250
