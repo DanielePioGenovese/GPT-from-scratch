@@ -1,4 +1,0 @@
-Per la configurazione usare YAML con Hydra (library by META): 
-http://www.youtube.com/watch?v=tEsPyYnzt8s
-
-
