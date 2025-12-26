@@ -1,8 +1,5 @@
-import tiktoken
 import torch
 from torch.utils.data import Dataset, DataLoader
-
-import tiktoken
 
 
 class GPTDatasetV1(Dataset):
@@ -18,16 +15,15 @@ class GPTDatasetV1(Dataset):
     def __getitem__(self, idx):
         start_idx = idx * self.stride
         end_idx = start_idx + self.max_length
-        
+
         input_chunk = self.input_ids[start_idx:end_idx]
         target_chunk = self.input_ids[start_idx + 1 : end_idx + 1]
 
         return input_chunk, target_chunk
 
 
-
 def create_dataloader_v1(
-    token_ids, 
+    token_ids,
     batch_size,
     max_length=256,
     stride=128,

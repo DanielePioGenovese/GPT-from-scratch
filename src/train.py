@@ -1,7 +1,6 @@
 import tiktoken
 import torch
 import hydra
-import requests
 from hydra.core.config_store import ConfigStore
 
 from dataset import create_dataloader_v1
@@ -16,16 +15,16 @@ import os
 cs = ConfigStore.instance()
 cs.store(name="model_config", node=Config)
 
+
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: Config):
-
-    if not os.path.exists('dataset_train.bin'):
+    if not os.path.exists("dataset_train.bin"):
         prepare_data()
 
-    data_map = np.memmap('dataset_train.bin', dtype=np.uint16, mode='r')
+    data_map = np.memmap("dataset_train.bin", dtype=np.uint16, mode="r")
     token_ids_tensor = torch.from_numpy(data_map.astype(np.int64))
     total_tokens = len(token_ids_tensor)
-    
+
     print(f"Dataset on the disk, total tokens: {total_tokens:,}")
 
     split_idx = int(cfg.dataset.train_ratio * total_tokens)
@@ -36,7 +35,7 @@ def main(cfg: Config):
         train_data,
         batch_size=cfg.model.micro_batch_size,
         max_length=cfg.model.max_length,
-        stride=cfg.model.max_length, 
+        stride=cfg.model.max_length,
         shuffle=cfg.dataset.train_shuffle,
         num_workers=cfg.dataset.num_workers,
     )
@@ -65,10 +64,9 @@ def main(cfg: Config):
         qkv_bias=cfg.model.qkv_bias,
     )
 
+    number_of_paramers = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Number of model parameters :{number_of_paramers:,}")
 
-    number_of_paramers = sum(p.numel() for p in model.parameters() if p.requires_grad) 
-    print(f'Number of model parameters :{number_of_paramers:,}')
-    
     model.to(device)
 
     trainer = Trainer(model, device)
@@ -84,9 +82,8 @@ def main(cfg: Config):
         train_loader=train_dataloader,
         val_loader=val_dataloader,
         tokenizer=tokenizer,
-        total_tokens=total_tokens,             
-        seq_len=cfg.model.max_length,         
-        
+        total_tokens=total_tokens,
+        seq_len=cfg.model.max_length,
         # --- Optimization & Scaling ---
         optimizer_name="AdamW",
         lr=cfg.model.learning_rate,
@@ -96,20 +93,17 @@ def main(cfg: Config):
         num_epochs=cfg.model.num_epochs,
         micro_batch_size=cfg.model.micro_batch_size,
         grad_accumulation_steps=cfg.model.grad_accumulation,
-        
         # --- Monitoring & Eval ---
         eval_freq=cfg.model.eval_freq,
         eval_iter=cfg.model.eval_iter,
-        
         # --- Text Generation (Testing) ---
         start_context=cfg.model.prompt,
         temperature=cfg.model.temperature,
         top_k=cfg.model.top_k,
         top_p=cfg.model.top_p,
-        
         # --- Checkpointing ---
         checkpoint_name=cfg.model.checkpoint_name,
-        checkpoint_path=cfg.model.checkpoint_path
+        checkpoint_path=cfg.model.checkpoint_path,
     )
 
     # Plotting

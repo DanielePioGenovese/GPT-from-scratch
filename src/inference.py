@@ -1,4 +1,4 @@
-import torch 
+import torch
 import tiktoken
 
 import hydra
@@ -10,13 +10,13 @@ from conf import Config
 from utils import load_checkpoint, generate_and_print_sample
 
 cs = ConfigStore.instance()
-cs.store(name='model_inference', node=Config)
+cs.store(name="model_inference", node=Config)
 
-@hydra.main(version_base=None, config_path='conf', config_name='config')
+
+@hydra.main(version_base=None, config_path="conf", config_name="config")
 def run_inference(cfg: Config):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
     model = GPTModel(
         vocab_size=cfg.model.vocab_size,
         emb_dim=cfg.model.embed_dim,
@@ -30,25 +30,22 @@ def run_inference(cfg: Config):
     )
 
     checkpoint_name = load_checkpoint(
-        cfg.model.checkpoint_name,
-        cfg.model.checkpoint_path
+        cfg.model.checkpoint_name, cfg.model.checkpoint_path
     )
 
     if not checkpoint_name:
-        print('Error: Checkpoint not found')
+        print("Error: Checkpoint not found")
         return
-    
+
     full_chk_path = Path(cfg.model.checkpoint_path) / Path(checkpoint_name)
 
-    checkpoint = torch.load(
-        full_chk_path,
-        map_location=device)
-    
+    checkpoint = torch.load(full_chk_path, map_location=device)
+
     state_dict = checkpoint["model_state_dict"]
     model.load_state_dict(state_dict=state_dict)
     model.to(device)
 
-    tokenizer = tiktoken.get_encoding('gpt2')
+    tokenizer = tiktoken.get_encoding("gpt2")
 
     generate_and_print_sample(
         model=model,
@@ -59,9 +56,9 @@ def run_inference(cfg: Config):
         context_size=cfg.model.max_length,
         temperature=cfg.model.temperature,
         top_k=cfg.model.top_k,
-        top_p=cfg.model.top_p
+        top_p=cfg.model.top_p,
     )
 
-if __name__ == '__main__':
-    run_inference()
 
+if __name__ == "__main__":
+    run_inference()

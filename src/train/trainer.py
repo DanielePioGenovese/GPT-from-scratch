@@ -8,7 +8,13 @@ import math
 
 # Assuming metrics are in metrics.py or similar
 from metrics import calc_loss_batch, calc_loss_loader
-from utils import get_lr_scheduler, plot_lr_scheduler, load_checkpoint, save_checkpoint, generate_and_print_sample
+from utils import (
+    get_lr_scheduler,
+    plot_lr_scheduler,
+    load_checkpoint,
+    save_checkpoint,
+    generate_and_print_sample,
+)
 
 
 class Trainer:
@@ -27,17 +33,22 @@ class Trainer:
         return train_loss, val_loss
 
     def _checkpoint(
-        self, checkpoint_name, checkpoint_path, steps_per_epoch, chk_path, start_epoch, grad_accumulation_steps
+        self,
+        checkpoint_name,
+        checkpoint_path,
+        steps_per_epoch,
+        chk_path,
+        start_epoch,
+        grad_accumulation_steps,
     ):
         check_checkpoint = load_checkpoint(checkpoint_name, checkpoint_path)
 
         if check_checkpoint == False:
             while True:
-
-                prompt_check = 'yes'
-                '''prompt_check = input(
+                prompt_check = "yes"
+                """prompt_check = input(
                     "Do you want continue with the training process (yes, no)? "
-                ).strip()'''
+                ).strip()"""
 
                 if prompt_check not in ("yes", "no"):
                     print("Type a valid value!")
@@ -47,24 +58,23 @@ class Trainer:
                 else:
                     print("Exiting program.")
                     sys.exit()
-            
+
             global_step, batches_to_skip = 0, 0
             return start_epoch, global_step, batches_to_skip
-        
-        else:   
+
+        else:
             print(f"Resuming from checkpoint: {check_checkpoint}")
             checkpoint = torch.load(
                 chk_path / check_checkpoint, map_location=self.device
             )
             self.model.load_state_dict(checkpoint["model_state_dict"])
             self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-            start_epoch = checkpoint["epoch"] 
-            global_step = checkpoint['global_step']
+            start_epoch = checkpoint["epoch"]
+            global_step = checkpoint["global_step"]
             batches_to_skip = (global_step + 1) * grad_accumulation_steps
-            
+
             return start_epoch, global_step, batches_to_skip
 
-    
     def _training_loop(
         self,
         lr,
@@ -78,27 +88,31 @@ class Trainer:
         val_loader,
         eval_freq,
         eval_iter,
-        grad_accumulation_steps, 
+        grad_accumulation_steps,
         global_step,
         chk_path,
-        batches_to_skip
+        batches_to_skip,
     ):
         train_losses, val_losses, track_tokens_seen, save_lr = [], [], [], []
         token_seen = 0
         max_lr = lr
-        
-        self.global_step = global_step if global_step >= 0 else 0
-        
-        self.last_best_checkpoint = None 
 
-        self.optimizer.zero_grad(set_to_none=True) 
+        self.global_step = global_step if global_step >= 0 else 0
+
+        self.last_best_checkpoint = None
+
+        self.optimizer.zero_grad(set_to_none=True)
         best_loss = torch.inf
 
-        print(f"Starting training. Total steps: {max_steps}. Initial Global Step: {self.global_step}")
+        print(
+            f"Starting training. Total steps: {max_steps}. Initial Global Step: {self.global_step}"
+        )
         if batches_to_skip > 0:
-            print(f"Resuming... skipping first {batches_to_skip} batches of epoch {start_epoch+1}.")
+            print(
+                f"Resuming... skipping first {batches_to_skip} batches of epoch {start_epoch + 1}."
+            )
 
-        try: 
+        try:
             for epoch in range(start_epoch, num_epochs):
                 self.model.train()
                 progress_bar = tqdm(
@@ -106,20 +120,23 @@ class Trainer:
                 )
 
                 for batch_idx, (input_batch, target_batch) in enumerate(progress_bar):
-                    
                     if epoch == start_epoch and batch_idx < batches_to_skip:
                         if batch_idx % 1000 == 0 and batch_idx > 0:
-                            progress_bar.set_description(f'Skipping batch {batch_idx}...')
+                            progress_bar.set_description(
+                                f"Skipping batch {batch_idx}..."
+                            )
                         continue
 
-                    loss = calc_loss_batch(
-                        input_batch, target_batch, self.model, self.device
-                    ) / grad_accumulation_steps 
+                    loss = (
+                        calc_loss_batch(
+                            input_batch, target_batch, self.model, self.device
+                        )
+                        / grad_accumulation_steps
+                    )
 
                     scaler.scale(loss).backward()
 
                     if (batch_idx + 1) % grad_accumulation_steps == 0:
-                        
                         it_for_lr = self.global_step + 1
                         cur_lr = get_lr_scheduler(
                             it_for_lr,
@@ -136,65 +153,91 @@ class Trainer:
                         scaler.step(self.optimizer)
                         scaler.update()
                         self.optimizer.zero_grad(set_to_none=True)
-                        
-                        self.global_step += 1 
+
+                        self.global_step += 1
 
                         if self.global_step % 10 == 0:
                             progress_bar.set_postfix(
-                                {"loss": f"{loss.item() * grad_accumulation_steps:.4f}", "lr": f"{cur_lr:.2e}", "step": self.global_step}
+                                {
+                                    "loss": f"{loss.item() * grad_accumulation_steps:.4f}",
+                                    "lr": f"{cur_lr:.2e}",
+                                    "step": self.global_step,
+                                }
                             )
 
                         if self.global_step % eval_freq == 0:
                             train_loss, val_loss = self._evaluate_model(
-                                self.model, train_loader, val_loader, self.device, eval_iter
+                                self.model,
+                                train_loader,
+                                val_loader,
+                                self.device,
+                                eval_iter,
                             )
-                            t_loss_val = train_loss.item() if isinstance(train_loss, torch.Tensor) else train_loss
-                            v_loss_val = val_loss.item() if isinstance(val_loss, torch.Tensor) else val_loss
-                            
+                            t_loss_val = (
+                                train_loss.item()
+                                if isinstance(train_loss, torch.Tensor)
+                                else train_loss
+                            )
+                            v_loss_val = (
+                                val_loss.item()
+                                if isinstance(val_loss, torch.Tensor)
+                                else val_loss
+                            )
+
                             train_losses.append(t_loss_val)
                             val_losses.append(v_loss_val)
                             track_tokens_seen.append(token_seen)
-                            tqdm.write(f"Step {self.global_step}: Val loss {v_loss_val:.3f}")
-                    
+                            tqdm.write(
+                                f"Step {self.global_step}: Val loss {v_loss_val:.3f}"
+                            )
+
                     actual_loss = loss.item() * grad_accumulation_steps
-                    
+
                     if actual_loss < best_loss:
                         best_loss = actual_loss
-                        
+
                         new_filename = f"step_{self.global_step}.pth"
-                        
+
                         if self.last_best_checkpoint is not None:
                             old_path = chk_path / self.last_best_checkpoint
                             if old_path.exists():
                                 try:
                                     import os
+
                                     os.remove(old_path)
                                 except OSError as e:
-                                    print(f"Warning: could not delete old checkpoint: {e}")
+                                    print(
+                                        f"Warning: could not delete old checkpoint: {e}"
+                                    )
 
                         save_checkpoint(
-                            epoch, self.global_step, self.model, self.optimizer, actual_loss, chk_path, 
-                            filename=new_filename
+                            epoch,
+                            self.global_step,
+                            self.model,
+                            self.optimizer,
+                            actual_loss,
+                            chk_path,
+                            filename=new_filename,
                         )
-                        
+
                         self.last_best_checkpoint = new_filename
-                    
+
                     token_seen += input_batch.numel()
-        
+
         except KeyboardInterrupt:
-            print('\n\n!!! KeyboardInterruction (Ctrl+C) !!!')
-            print('Saving the model...')
-            
+            print("\n\n!!! KeyboardInterruction (Ctrl+C) !!!")
+            print("Saving the model...")
+
             save_checkpoint(
-                epoch=epoch, 
-                step=self.global_step, 
-                model=self.model, 
-                optimizer=self.optimizer, 
-                loss=loss.item() * grad_accumulation_steps, 
+                epoch=epoch,
+                step=self.global_step,
+                model=self.model,
+                optimizer=self.optimizer,
+                loss=loss.item() * grad_accumulation_steps,
                 chk_path=chk_path,
-                filename="last_interrupted.pth" 
+                filename="last_interrupted.pth",
             )
-            print('Saving completed')
+            print("Saving completed")
             sys.exit(0)
 
         return save_lr, train_losses, val_losses, track_tokens_seen
@@ -212,7 +255,7 @@ class Trainer:
         start_context,
         tokenizer,
         total_tokens,
-        micro_batch_size, 
+        micro_batch_size,
         seq_len,
         grad_accumulation_steps,
         temperature=1.0,
@@ -257,7 +300,12 @@ class Trainer:
         global_step = -1
 
         start_epoch, global_step, batches_to_skip = self._checkpoint(
-            checkpoint_name, checkpoint_path, raw_updates, chk_path, start_epoch, grad_accumulation_steps
+            checkpoint_name,
+            checkpoint_path,
+            raw_updates,
+            chk_path,
+            start_epoch,
+            grad_accumulation_steps,
         )
 
         save_lr, train_losses, val_losses, track_tokens_seen = self._training_loop(
@@ -265,21 +313,17 @@ class Trainer:
             val_loader=val_loader,
             start_epoch=start_epoch,
             num_epochs=num_epochs,
-            
             max_steps=total_steps,
             warmup_steps=warmup_steps,
             lr=lr,
             min_lr=min_lr,
-            
             scaler=scaler,
             grad_accumulation_steps=grad_accumulation_steps,
-            
             eval_freq=eval_freq,
             eval_iter=eval_iter,
-            
             global_step=global_step,
             chk_path=chk_path,
-            batches_to_skip=batches_to_skip
+            batches_to_skip=batches_to_skip,
         )
 
         generate_and_print_sample(
