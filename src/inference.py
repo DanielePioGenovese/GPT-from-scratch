@@ -48,7 +48,7 @@ def run_inference(cfg: Config):
     model.load_state_dict(state_dict=state_dict)
     model.to(device)
 
-    tokenizer = tiktoken.get_encoding('gpt')
+    tokenizer = tiktoken.get_encoding('gpt2')
 
     generate_and_print_sample(
         model=model,
