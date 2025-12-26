@@ -1,6 +1,6 @@
 # GPTModel Pipeline 🚀
 
-A complete training and inference pipeline for a GPT-like model using PyTorch and Hydra.  
+A complete training and inference pipeline for a GPT-like model using PyTorch.  
 This project covers data preparation, model training, checkpointing, and text generation.
 
 ## Project Structure
