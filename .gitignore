@@ -15,7 +15,7 @@ src/outputs/
 # Checkpoints
 *.pth
 *.pt
-checkpoint/
+src/checkpoint/
 checkpoints/
 
 # Stuff
