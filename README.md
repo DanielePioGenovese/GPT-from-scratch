@@ -1,3 +1,5 @@
+GitHub: https://github.com/DanielePioGenovese/GPT-from-scratch HuggingFace: https://huggingface.co/DanielePio/GPT-From-Scratch-30M
+
 # GPTModel Pipeline 🚀  
 A Complete Training and Inference Pipeline for a GPT-like 30 Million Parameter Model using PyTorch
 
