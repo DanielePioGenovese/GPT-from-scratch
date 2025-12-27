@@ -65,7 +65,7 @@ class Trainer:
         else:
             print(f"Resuming from checkpoint: {check_checkpoint}")
             checkpoint = torch.load(
-                chk_path / check_checkpoint, map_location=self.device
+                chk_path / check_checkpoint, map_location=self.device, weights_only=False
             )
             self.model.load_state_dict(checkpoint["model_state_dict"])
             self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])

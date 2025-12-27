@@ -38,8 +38,8 @@ def run_inference(cfg: Config):
         return
 
     full_chk_path = Path(cfg.model.checkpoint_path) / Path(checkpoint_name)
-
-    checkpoint = torch.load(full_chk_path, map_location=device)
+    print(full_chk_path)
+    checkpoint = torch.load(full_chk_path, map_location=device, weights_only=False)
 
     state_dict = checkpoint["model_state_dict"]
     model.load_state_dict(state_dict=state_dict)
