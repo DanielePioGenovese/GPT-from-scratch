@@ -55,7 +55,6 @@ class InputEmbeddings(torch.nn.Module):
 class PositionalEmbedding(torch.nn.Module):
     def __init__(self, max_length, out_dim):
         super().__init__()
-        # GPT impara le posizioni come se fossero parole
         self.pos_embedding = torch.nn.Embedding(max_length, out_dim)
 
     def forward(self, input_ids):

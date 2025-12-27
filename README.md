@@ -1,9 +1,12 @@
 # GPTModel Pipeline 🚀  
 A Complete Training and Inference Pipeline for a GPT-like 30 Million Parameter Model using PyTorch
 
-This project provides a robust, modular pipeline to train, checkpoint, and generate text with a GPT-style transformer, utilizing a 400M token dataset. It covers end-to-end processes from data preparation through model training and inference.
+This project provides a robust, modular pipeline to train, checkpoint, and generate text with a GPT-style transformer, utilizing a 400M token dataset (Tiny Stories: https://huggingface.co/datasets/roneneldan/TinyStories). It covers end-to-end processes from data preparation through model training and inference.
 
----
+
+<p align="center">
+  <img src="imgs\decoder.png" width="550" style="margin-top: 10px;">
+</p>
 
 ## 📂 Repository Structure
 
@@ -304,25 +307,7 @@ We welcome issues and pull requests! Please follow the existing code style and b
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-```card
-{
-  "title": "Best Practice",
-  "content": "Always review and adjust hyperparameters in conf/config.yaml for your hardware and dataset before large-scale training."
-}
-```
-
----
-
-```card
-{
-  "title": "Tip: Fast Setup",
-  "content": "Use `make install` for consistent, reproducible dependency setup with uv. Use `make train` to start training immediately."
-}
-```
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ---
 
